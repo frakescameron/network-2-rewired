@@ -171,6 +171,7 @@ function App() {
     chargeRef.current = 0;
   }
 
+  
   function releaseJump() {
     const p = playerRef.current;
 
