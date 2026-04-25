@@ -31,6 +31,8 @@ const goal = {
   height: 40,
 };
 
+const BASE = import.meta.env.BASE_URL;
+
 function App() {
   const [screen, setScreen] = useState("pre");
   const [showQuestion, setShowQuestion] = useState(false);
@@ -362,17 +364,17 @@ function App() {
     >
       <video
         className="bg-video"
-        src="/video/starty.mp4"
+        src={`${BASE}video/starty.mp4`}
         autoPlay
         loop
         muted
         playsInline
       />
 
-      <audio ref={startAudioRef} src="/audio/ironclad.mp3" loop />
+      <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
       <audio
           ref={audioRef}
-          src="/audio/chrometempest.mp3"
+          src={`${BASE}audio/chrometempest.mp3`}
           loop
           preload="auto"
         />
@@ -390,15 +392,15 @@ function App() {
       <main className="start-screen" onClick={playMenuMusic}>
         <video
           className="bg-video"
-          src="/video/starty.mp4"
+          src={`${BASE}video/starty.mp4`}
           autoPlay
           loop
           muted
           playsInline
         />
 
-        <audio ref={startAudioRef} src="/audio/ironclad.mp3" loop />
-        <audio ref={audioRef} src="/audio/chrometempest.mp3" loop />
+        <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
+        <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
 
         <div className="start-card">
           <h1>Network 2: Rewired</h1>
@@ -416,15 +418,15 @@ function App() {
       <main className="start-screen" onClick={playMenuMusic}>
         <video
           className="bg-video"
-          src="/video/starty.mp4"
+          src={`${BASE}video/starty.mp4`}
           autoPlay
           loop
           muted
           playsInline
         />
 
-        <audio ref={startAudioRef} src="/audio/ironclad.mp3" loop />
-        <audio ref={audioRef} src="/audio/chrometempest.mp3" loop />
+        <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
+        <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
 
         <div className="start-card">
           <h1>How to Play</h1>
@@ -445,14 +447,14 @@ function App() {
     <main className="game">
       <video
         className="bg-video"
-        src="/video/spacehole.mp4"
+        src={`${BASE}video/spacehole.mp4`}
         autoPlay
         loop
         muted
         playsInline
       />
 
-      <audio ref={audioRef} src="/audio/chrometempest.mp3" loop />
+      <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
 
       <div
         className="goal"
