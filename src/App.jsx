@@ -11,8 +11,8 @@ const QUESTION = {
 };
 
 const SETTINGS = {
-  green: { label: "GREEN", maxChargeMs: 3000 },
-  yellow: { label: "YELLOW", maxChargeMs: 10000 },
+  green: { label: "GREEN", maxChargeMs: 2000 },
+  yellow: { label: "YELLOW", maxChargeMs: 5000 },
   red: { label: "RED", maxChargeMs: null },
 };
 
@@ -157,12 +157,13 @@ function App() {
     setShowQuestion(false);
 
     if (result === "green") {
-      setMaxChargeMs(3000);
+      setMaxChargeMs(950);
     }
 
     if (result === "yellow") {
-      setMaxChargeMs(10000);
+      setMaxChargeMs(5000);
     }
+    
 
     if (result === "red") {
       const cursedCharge = Math.floor(Math.random() * 29000) + 1000;
@@ -187,14 +188,25 @@ function App() {
       return;
     }
 
-    const power = Math.min(chargeRef.current / maxChargeRef.current, 1);
-    const jumpPower = 6 + power * 13;
+   const power = Math.min(chargeRef.current / maxChargeRef.current, 1);
+const jumpPower = 7 + power * 8;
 
-    const nextPlayer = {
-      ...p,
-      vy: -jumpPower,
-      grounded: false,
-    };
+let horizontalPower = 0;
+
+if (keys.current.ArrowLeft || keys.current.KeyA) {
+  horizontalPower = -14;
+}
+
+if (keys.current.ArrowRight || keys.current.KeyD) {
+  horizontalPower = 14;
+}
+
+const nextPlayer = {
+  ...p,
+  vx: horizontalPower * power,
+  vy: -jumpPower,
+  grounded: false,
+};
 
     setPlayer(nextPlayer);
     playerRef.current = nextPlayer;
@@ -295,18 +307,13 @@ function App() {
       const oldP = { ...playerRef.current };
       let p = { ...playerRef.current };
 
-      if (!showQuestionRef.current) {
-        if (keys.current.ArrowLeft || keys.current.KeyA) {
-          p.vx -= 0.35;
-        }
-
-        if (keys.current.ArrowRight || keys.current.KeyD) {
-          p.vx += 0.35;
-        }
-      }
-
-      p.vx *= 0.9;
-      p.vy += 0.55;
+      if (p.grounded) {
+  if (Math.abs(p.vx) < 0.5) p.vx = 0;
+  else p.vx *= 0.5;
+} else {
+  p.vx *= 1.002;
+}
+      p.vy += .22;
 
       p.x += p.vx;
       p.y += p.vy;
