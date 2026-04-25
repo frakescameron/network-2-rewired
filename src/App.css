@@ -2,13 +2,9 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
+body {
   margin: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
+  background: #080808;
   color: white;
   font-family: Arial, sans-serif;
   overflow: hidden;
@@ -20,39 +16,28 @@ body,
   inset: 0;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
-  background: #000;
 }
 
 .start-screen {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.bg-video {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.35;
+  background:
+    linear-gradient(#000000 1px),
+    linear-gradient(90deg, #000000 1px),
+    #000000;
+  background-size: 24px 24px;
 }
 
 .start-card {
-  position: relative;
-  z-index: 5;
   width: min(520px, 90vw);
-  background: #000;
-  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 20px;
   padding: 32px;
   text-align: center;
+
   box-shadow:
-    0 0 70px rgba(0, 0, 0, 0.98),
-    0 0 24px rgba(255, 255, 255, 0.08);
+    0 0 60px rgba(0, 0, 0, 0.95),   /* strong separation */
+    0 0 25px rgba(255, 255, 255, 0.05); /* subtle glow */
 }
 
 .start-card h1 {
@@ -66,8 +51,7 @@ body,
   line-height: 1.5;
 }
 
-.start-card button,
-.question-modal button {
+.start-card button {
   width: 100%;
   margin-top: 12px;
   padding: 14px;
@@ -80,9 +64,15 @@ body,
   font-weight: bold;
 }
 
-.start-card button:hover,
-.question-modal button:hover {
+.start-card button:hover {
   background: #333;
+}
+
+.game {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: black;
 }
 
 .goal {
@@ -94,15 +84,7 @@ body,
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 3;
-}
-
-.platform {
-  position: absolute;
-  height: 14px;
-  background: white;
-  border-radius: 999px;
-  z-index: 3;
+  border: 1px solid transparent;
 }
 
 .player {
@@ -112,7 +94,7 @@ body,
   background: white;
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  z-index: 4;
+  z-index: 3;
 }
 
 .player-indicator {
@@ -120,7 +102,7 @@ body,
   transform: translateX(-50%);
   font-weight: 900;
   font-size: 0.8rem;
-  z-index: 5;
+  z-index: 4;
   text-shadow: 2px 2px 0 #000;
 }
 
@@ -142,7 +124,7 @@ body,
   height: 8px;
   border: 1px solid white;
   background: #111;
-  z-index: 5;
+  z-index: 4;
 }
 
 .charge-bar div {
@@ -161,6 +143,31 @@ body,
   background: #ef4444;
 }
 
+.platform {
+  position: absolute;
+  height: 14px;
+  background: white;
+  border-radius: 999px;
+}
+
+.platform-1 {
+  width: 180px;
+  left: 38%;
+  top: 68%;
+}
+
+.platform-2 {
+  width: 150px;
+  left: 56%;
+  top: 45%;
+}
+
+.platform-3 {
+  width: 150px;
+  left: 40%;
+  top: 25%;
+}
+
 .question-overlay {
   position: fixed;
   inset: 0;
@@ -173,7 +180,7 @@ body,
 
 .question-modal {
   width: min(520px, 90vw);
-  background: #000;
+  background: rgba(17, 17, 17, 0.96);
   border: 1px solid #555;
   border-radius: 20px;
   padding: 30px;
@@ -189,4 +196,53 @@ body,
 .answers {
   display: grid;
   gap: 12px;
+}
+
+.answers button {
+  padding: 14px;
+  background: #222;
+  color: white;
+  border: 1px solid #666;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.answers button:hover {
+  background: #333;
+}
+
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.goal,
+.platform,
+.player,
+.player-indicator,
+.charge-bar {
+  z-index: 2;
+}
+
+.question-overlay {
+  z-index: 20;
 }

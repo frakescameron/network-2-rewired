@@ -1,15 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-const BASE = import.meta.env.BASE_URL;
-
-const MEDIA = {
-  menuVideo: `${BASE}video/starty.mp4`,
-  gameVideo: `${BASE}video/spacehole.mp4`,
-  menuAudio: `${BASE}audio/ironclad.mp3`,
-  gameAudio: `${BASE}audio/chrometempest.mp3`,
-};
-
 const QUESTION = {
   text: "What port does HTTPS usually use?",
   answers: [
@@ -40,6 +31,8 @@ const goal = {
   height: 40,
 };
 
+const BASE = import.meta.env.BASE_URL;
+
 function App() {
   const [screen, setScreen] = useState("pre");
   const [showQuestion, setShowQuestion] = useState(false);
@@ -57,8 +50,9 @@ function App() {
   const [maxChargeMs, setMaxChargeMs] = useState(3000);
   const [chargeMs, setChargeMs] = useState(0);
 
-  const menuAudioRef = useRef(null);
-  const gameAudioRef = useRef(null);
+  
+  const audioRef = useRef(null);
+  const startAudioRef = useRef(null);
 
   const keys = useRef({});
   const playerRef = useRef(player);
@@ -95,68 +89,66 @@ function App() {
   }, [won]);
 
   function playMenuMusic() {
-    const audio = menuAudioRef.current;
-    if (!audio) return;
-    audio.volume = 0.4;
-    audio.play().catch(console.log);
-  }
+    if (!startAudioRef.current) return;
 
-  function stopMenuMusic() {
-    const audio = menuAudioRef.current;
-    if (!audio) return;
-    audio.pause();
-    audio.currentTime = 0;
+    startAudioRef.current.volume = 0.4;
+    startAudioRef.current.play().catch((e) => console.log(e));
   }
 
   function playGameMusic() {
-    const audio = gameAudioRef.current;
-    if (!audio) return;
-    audio.volume = 0.4;
-    audio.currentTime = 0;
-    audio.play().catch(console.log);
+    if (!audioRef.current) return;
+
+    audioRef.current.volume = 0.4;
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch((e) => console.log(e));
+  }
+
+  function stopMenuMusic() {
+    if (!startAudioRef.current) return;
+
+    startAudioRef.current.pause();
+    startAudioRef.current.currentTime = 0;
   }
 
   function stopGameMusic() {
-    const audio = gameAudioRef.current;
-    if (!audio) return;
-    audio.pause();
-    audio.currentTime = 0;
+    if (!audioRef.current) return;
+
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
   }
 
-  function unlockToMenu() {
-    playMenuMusic();
-    setScreen("start");
-  }
+ function startGame() {
+  stopMenuMusic();
 
-  function startGame(e) {
-    e?.stopPropagation();
+  setScreen("game");
+  setShowQuestion(true);
+  setWon(false);
+  setAnswerState(null);
+  setChargeMs(0);
+  chargeRef.current = 0;
 
-    stopMenuMusic();
-    playGameMusic();
+  setTimeout(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0.4;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((e) => console.log(e));
+    }
+  }, 0);
 
-    setScreen("game");
-    setShowQuestion(true);
-    setWon(false);
-    setAnswerState(null);
-    setChargeMs(0);
-    chargeRef.current = 0;
+  const startingPlayer = {
+    x: 600,
+    y: window.innerHeight - 40,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+  };
 
-    const startingPlayer = {
-      x: 600,
-      y: window.innerHeight - 40,
-      vx: 0,
-      vy: 0,
-      grounded: true,
-    };
+  setPlayer(startingPlayer);
+  playerRef.current = startingPlayer;
+}
 
-    setPlayer(startingPlayer);
-    playerRef.current = startingPlayer;
-  }
-
-  function backToStart(e) {
-    e?.stopPropagation();
+  function backToStart() {
     stopGameMusic();
-    playMenuMusic();
     setScreen("start");
   }
 
@@ -164,13 +156,23 @@ function App() {
     setAnswerState(result);
     setShowQuestion(false);
 
-    if (result === "green") setMaxChargeMs(3000);
-    if (result === "yellow") setMaxChargeMs(10000);
-    if (result === "red") setMaxChargeMs(Math.floor(Math.random() * 29000) + 1000);
+    if (result === "green") {
+      setMaxChargeMs(3000);
+    }
+
+    if (result === "yellow") {
+      setMaxChargeMs(10000);
+    }
+
+    if (result === "red") {
+      const cursedCharge = Math.floor(Math.random() * 29000) + 1000;
+      setMaxChargeMs(cursedCharge);
+    }
 
     setChargeMs(0);
     chargeRef.current = 0;
   }
+
 
   function releaseJump() {
     const p = playerRef.current;
@@ -217,13 +219,17 @@ function App() {
     for (const platform of platforms) {
       const playerBottom = p.y + PLAYER_SIZE / 2;
       const oldPlayerBottom = oldP.y + PLAYER_SIZE / 2;
+
       const playerLeft = p.x - PLAYER_SIZE / 2;
       const playerRight = p.x + PLAYER_SIZE / 2;
 
       const falling = p.vy >= 0;
+
       const horizontallyOverlapping =
         playerRight > platform.x && playerLeft < platform.x + platform.width;
-      const crossedPlatform = oldPlayerBottom <= platform.y && playerBottom >= platform.y;
+
+      const crossedPlatform =
+        oldPlayerBottom <= platform.y && playerBottom >= platform.y;
 
       if (falling && horizontallyOverlapping && crossedPlatform) {
         p.y = platform.y - PLAYER_SIZE / 2;
@@ -290,14 +296,21 @@ function App() {
       let p = { ...playerRef.current };
 
       if (!showQuestionRef.current) {
-        if (keys.current.ArrowLeft || keys.current.KeyA) p.vx -= 0.35;
-        if (keys.current.ArrowRight || keys.current.KeyD) p.vx += 0.35;
+        if (keys.current.ArrowLeft || keys.current.KeyA) {
+          p.vx -= 0.35;
+        }
+
+        if (keys.current.ArrowRight || keys.current.KeyD) {
+          p.vx += 0.35;
+        }
       }
 
       p.vx *= 0.9;
       p.vy += 0.55;
+
       p.x += p.vx;
       p.y += p.vy;
+
       p.grounded = false;
 
       if (p.x < PLAYER_SIZE / 2) {
@@ -340,33 +353,54 @@ function App() {
 
   const chargePercent = Math.min((chargeMs / maxChargeMs) * 100, 100);
 
-  function MenuMedia() {
-    return (
-      <>
-        <video className="bg-video" src={MEDIA.menuVideo} autoPlay loop muted playsInline />
-        <audio ref={menuAudioRef} src={MEDIA.menuAudio} loop preload="auto" />
-        <audio ref={gameAudioRef} src={MEDIA.gameAudio} loop preload="auto" />
-      </>
-    );
-  }
-
   if (screen === "pre") {
-    return (
-      <main className="start-screen" onClick={unlockToMenu}>
-        <MenuMedia />
+  return (
+    <main
+      className="start-screen"
+      onClick={() => {
+        playMenuMusic();
+        setScreen("start");
+      }}
+    >
+      <video
+        className="bg-video"
+        src={`${BASE}video/starty.mp4`}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
 
-        <div className="start-card">
-          <h1>Network 2: Rewired</h1>
-          <p>Click anywhere to start</p>
-        </div>
-      </main>
-    );
-  }
+      <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
+      <audio
+          ref={audioRef}
+          src={`${BASE}audio/chrometempest.mp3`}
+          loop
+          preload="auto"
+        />
+
+      <div className="start-card">
+        <h1>Network 2: Rewired</h1>
+        <p>Click anywhere to start</p>
+      </div>
+    </main>
+  );
+}
 
   if (screen === "start") {
     return (
-      <main className="start-screen">
-        <MenuMedia />
+      <main className="start-screen" onClick={playMenuMusic}>
+        <video
+          className="bg-video"
+          src={`${BASE}video/starty.mp4`}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+
+        <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
+        <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
 
         <div className="start-card">
           <h1>Network 2: Rewired</h1>
@@ -381,8 +415,18 @@ function App() {
 
   if (screen === "how") {
     return (
-      <main className="start-screen">
-        <MenuMedia />
+      <main className="start-screen" onClick={playMenuMusic}>
+        <video
+          className="bg-video"
+          src={`${BASE}video/starty.mp4`}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+
+        <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
+        <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
 
         <div className="start-card">
           <h1>How to Play</h1>
@@ -401,36 +445,73 @@ function App() {
 
   return (
     <main className="game">
-      <video className="bg-video" src={MEDIA.gameVideo} autoPlay loop muted playsInline />
-      <audio ref={gameAudioRef} src={MEDIA.gameAudio} loop preload="auto" />
+      <video
+        className="bg-video"
+        src={`${BASE}video/spacehole.mp4`}
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
 
-      <div className="goal" style={goal}>
+      <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
+
+      <div
+        className="goal"
+        style={{
+          left: goal.x,
+          top: goal.y,
+          width: goal.width,
+          height: goal.height,
+        }}
+      >
         GOAL
       </div>
 
       {platforms.map((platform, index) => (
-        <div key={index} className="platform" style={platform}></div>
+        <div
+          key={index}
+          className="platform"
+          style={{
+            left: platform.x,
+            top: platform.y,
+            width: platform.width,
+            height: platform.height,
+          }}
+        ></div>
       ))}
 
       {answerState && (
-        <>
-          <div
-            className={`player-indicator ${answerState}`}
-            style={{ left: player.x, top: player.y - 58 }}
-          >
-            {SETTINGS[answerState].label}
-          </div>
-
-          <div
-            className={`charge-bar ${answerState}`}
-            style={{ left: player.x - 35, top: player.y - 38 }}
-          >
-            <div style={{ width: `${chargePercent}%` }}></div>
-          </div>
-        </>
+        <div
+          className={`player-indicator ${answerState}`}
+          style={{
+            left: player.x,
+            top: player.y - 58,
+          }}
+        >
+          {SETTINGS[answerState].label}
+        </div>
       )}
 
-      <div className="player" style={{ left: player.x, top: player.y }}></div>
+      {answerState && (
+        <div
+          className={`charge-bar ${answerState}`}
+          style={{
+            left: player.x - 35,
+            top: player.y - 38,
+          }}
+        >
+          <div style={{ width: `${chargePercent}%` }}></div>
+        </div>
+      )}
+
+      <div
+        className="player"
+        style={{
+          left: player.x,
+          top: player.y,
+        }}
+      ></div>
 
       {showQuestion && (
         <div className="question-overlay">
