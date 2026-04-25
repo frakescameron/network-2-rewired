@@ -171,7 +171,7 @@ function App() {
     chargeRef.current = 0;
   }
 
-  
+
   function releaseJump() {
     const p = playerRef.current;
 
@@ -362,7 +362,7 @@ function App() {
     >
       <video
         className="bg-video"
-        src="/video/start.mp4"
+        src="/video/starty.mp4"
         autoPlay
         loop
         muted
@@ -390,7 +390,7 @@ function App() {
       <main className="start-screen" onClick={playMenuMusic}>
         <video
           className="bg-video"
-          src="/video/start.mp4"
+          src="/video/starty.mp4"
           autoPlay
           loop
           muted
@@ -416,7 +416,7 @@ function App() {
       <main className="start-screen" onClick={playMenuMusic}>
         <video
           className="bg-video"
-          src="/video/start.mp4"
+          src="/video/starty.mp4"
           autoPlay
           loop
           muted
