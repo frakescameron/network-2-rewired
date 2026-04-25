@@ -1,165 +1,299 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-const scenarios = [
-  {
-    title: "Level 1: DNS Is Fake Apparently",
-    intro:
-      "Users say the internet is down. You suspect DNS because pinging IPs still works.",
-    goal: "Fix DNS so users can reach google.com.",
-    correctCommand: "set dns 8.8.8.8",
-    hints: ["Try: ping 8.8.8.8", "Try: nslookup google.com"],
+const QUESTION = {
+  text: "What port does HTTPS usually use?",
+  answers: [
+    { text: "443", result: "green" },
+    { text: "80", result: "yellow" },
+    { text: "21", result: "red" },
+  ],
+};
+
+const SETTINGS = {
+  green: {
+    label: "GREEN",
+    maxChargeMs: 3000,
+    message: "Correct. Normal jump charge.",
   },
-  {
-    title: "Level 2: DHCP Took The Day Off",
-    intro:
-      "A workstation has no valid IP address. It assigned itself a weird 169.254 address.",
-    goal: "Renew the workstation IP address.",
-    correctCommand: "ipconfig /renew",
-    hints: ["Try: ipconfig", "The client needs a new DHCP lease."],
+  yellow: {
+    label: "YELLOW",
+    maxChargeMs: 9000,
+    message: "Close. Slower jump charge.",
   },
-  {
-    title: "Level 3: Gateway? Never Heard Of Her",
-    intro:
-      "The PC has an IP and DNS, but it cannot reach anything outside the local network.",
-    goal: "Set the correct default gateway.",
-    correctCommand: "set gateway 192.168.1.1",
-    hints: ["Try: route print", "Something is wrong with the default gateway."],
+  red: {
+    label: "RED",
+    maxChargeMs: null,
+    message: "Wrong. Cursed jump charge.",
   },
-];
+};
 
 function App() {
-  const [level, setLevel] = useState(0);
-  const [input, setInput] = useState("");
-  const [log, setLog] = useState([
-    "Network 2: Rewired",
-    '"The network was fixed once. It did not stay that way."',
-    "",
-    "Type help to begin.",
-  ]);
+  const [screen, setScreen] = useState("start");
+  const [showQuestion, setShowQuestion] = useState(false);
 
-  const scenario = scenarios[level];
+  const [player, setPlayer] = useState({
+    x: 600,
+    y: 620,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+  });
 
-  function runCommand(commandRaw) {
-    const command = commandRaw.trim().toLowerCase();
-    const newLog = [...log, `> ${commandRaw}`];
+  const [answerState, setAnswerState] = useState(null);
+  const [maxChargeMs, setMaxChargeMs] = useState(3000);
+  const [message, setMessage] = useState("Answer a question to set your jump behavior.");
+  const [charging, setCharging] = useState(false);
+  const [chargeMs, setChargeMs] = useState(0);
 
-    if (command === "help") {
-      newLog.push(
-        "",
-        "Available commands:",
-        "help",
-        "status",
-        "hint",
-        "ping 8.8.8.8",
-        "nslookup google.com",
-        "ipconfig",
-        "ipconfig /renew",
-        "route print",
-        "set dns 8.8.8.8",
-        "set gateway 192.168.1.1",
-        ""
-      );
-    } else if (command === "status") {
-      newLog.push("", scenario.title, scenario.intro, `Goal: ${scenario.goal}`, "");
-    } else if (command === "hint") {
-      newLog.push("", ...scenario.hints, "");
-    } else if (command === "ping 8.8.8.8") {
-      newLog.push("", "Reply from 8.8.8.8: bytes=32 time=24ms TTL=117", "");
-    } else if (command === "nslookup google.com") {
-      if (level === 0) {
-        newLog.push("", "DNS request failed. Server not responding.", "");
-      } else {
-        newLog.push("", "Name: google.com", "Address: 142.250.190.78", "");
-      }
-    } else if (command === "ipconfig") {
-      if (level === 1) {
-        newLog.push(
-          "",
-          "IPv4 Address: 169.254.44.10",
-          "Subnet Mask: 255.255.0.0",
-          "Default Gateway:",
-          ""
-        );
-      } else {
-        newLog.push(
-          "",
-          "IPv4 Address: 192.168.1.25",
-          "Subnet Mask: 255.255.255.0",
-          "Default Gateway: 192.168.1.1",
-          ""
-        );
-      }
-    } else if (command === "route print") {
-      if (level === 2) {
-        newLog.push("", "Default Gateway: 0.0.0.0", "That looks extremely cursed.", "");
-      } else {
-        newLog.push("", "Routes look normal.", "");
-      }
-    } else if (command === scenario.correctCommand) {
-      newLog.push("", "Fix applied successfully.", "Network gremlin defeated.", "");
+  const keys = useRef({});
+  const playerRef = useRef(player);
+  const chargingRef = useRef(false);
+  const chargeRef = useRef(0);
+  const maxChargeRef = useRef(maxChargeMs);
 
-      if (level + 1 < scenarios.length) {
-        newLog.push(`Next level unlocked: ${scenarios[level + 1].title}`, "");
-        setLevel(level + 1);
-      } else {
-        newLog.push(
-          "YOU WIN.",
-          "The network is stable. For now.",
-          "Network 3 will probably ruin everything.",
-          ""
-        );
-      }
-    } else {
-      newLog.push("", "Command not recognized or not useful here.", "Try help or hint.", "");
-    }
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
 
-    setLog(newLog);
-    setInput("");
+  useEffect(() => {
+    chargingRef.current = charging;
+  }, [charging]);
+
+  useEffect(() => {
+    maxChargeRef.current = maxChargeMs;
+  }, [maxChargeMs]);
+
+  function startGame() {
+    setScreen("game");
+    setShowQuestion(true);
+    setAnswerState(null);
+    setMessage("Answer the question to unlock your jump.");
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!input.trim()) return;
-    runCommand(input);
+  function chooseAnswer(result) {
+    setAnswerState(result);
+    setShowQuestion(false);
+
+    if (result === "red") {
+      const cursedCharge = Math.floor(Math.random() * 10000) + 2000;
+      setMaxChargeMs(cursedCharge);
+      setMessage(`${SETTINGS.red.message} Full charge is secretly ${Math.round(cursedCharge / 1000)} seconds.`);
+    } else {
+      setMaxChargeMs(SETTINGS[result].maxChargeMs);
+      setMessage(SETTINGS[result].message);
+    }
+
+    setChargeMs(0);
+    chargeRef.current = 0;
+  }
+
+  function releaseJump() {
+    const p = playerRef.current;
+    if (!p.grounded || showQuestion || screen !== "game" || !answerState) return;
+
+    const power = Math.min(chargeRef.current / maxChargeRef.current, 1);
+    const jumpPower = 6 + power * 13;
+
+    setPlayer({
+      ...p,
+      vy: -jumpPower,
+      grounded: false,
+    });
+
+    setCharging(false);
+    chargingRef.current = false;
+    chargeRef.current = 0;
+    setChargeMs(0);
+  }
+
+  useEffect(() => {
+    function keyDown(e) {
+      keys.current[e.code] = true;
+
+      if (
+        e.code === "Space" &&
+        playerRef.current.grounded &&
+        !chargingRef.current &&
+        screen === "game" &&
+        !showQuestion &&
+        answerState
+      ) {
+        e.preventDefault();
+        setCharging(true);
+        chargingRef.current = true;
+        chargeRef.current = 0;
+        setChargeMs(0);
+      }
+    }
+
+    function keyUp(e) {
+      keys.current[e.code] = false;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        releaseJump();
+      }
+    }
+
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+
+    return () => {
+      window.removeEventListener("keydown", keyDown);
+      window.removeEventListener("keyup", keyUp);
+    };
+  }, [screen, showQuestion, answerState]);
+
+  useEffect(() => {
+    let lastTime = performance.now();
+    let animationId;
+
+    function gameLoop(time) {
+      const delta = time - lastTime;
+      lastTime = time;
+
+      if (screen !== "game") {
+        animationId = requestAnimationFrame(gameLoop);
+        return;
+      }
+
+      let p = { ...playerRef.current };
+
+      if (!showQuestion) {
+        if (keys.current.ArrowLeft || keys.current.KeyA) {
+          p.vx -= 0.35;
+        }
+
+        if (keys.current.ArrowRight || keys.current.KeyD) {
+          p.vx += 0.35;
+        }
+      }
+
+      p.vx *= 0.9;
+      p.vy += 0.55;
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      if (p.x < 20) {
+        p.x = 20;
+        p.vx = 0;
+      }
+
+      if (p.x > window.innerWidth - 20) {
+        p.x = window.innerWidth - 20;
+        p.vx = 0;
+      }
+
+      if (p.y > window.innerHeight - 40) {
+        p.y = window.innerHeight - 40;
+        p.vy = 0;
+        p.grounded = true;
+      }
+
+      playerRef.current = p;
+      setPlayer(p);
+
+      if (chargingRef.current) {
+        chargeRef.current += delta;
+        setChargeMs(chargeRef.current);
+      }
+
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    animationId = requestAnimationFrame(gameLoop);
+    return () => cancelAnimationFrame(animationId);
+  }, [screen, showQuestion]);
+
+  const chargePercent = Math.min((chargeMs / maxChargeMs) * 100, 100);
+
+  if (screen === "start") {
+    return (
+      <main className="start-screen">
+        <div className="start-card">
+          <h1>Network 2: Rewired</h1>
+          <p>The network was fixed once. It did not stay that way.</p>
+
+          <button onClick={startGame}>Play</button>
+          <button onClick={() => setScreen("how")}>How to Play</button>
+        </div>
+      </main>
+    );
+  }
+
+  if (screen === "how") {
+    return (
+      <main className="start-screen">
+        <div className="start-card">
+          <h1>How to Play</h1>
+          <p>Answer networking questions to control how your jump charges.</p>
+          <p>Correct/Green = normal jump. Yellow/Close = slower charge jump. Red/Wrong = cursed random jump.</p>
+          <p>Move with A / D or arrow keys. Hold SPACE to charge. Release SPACE to jump.</p>
+
+          <button onClick={startGame}>Play</button>
+          <button onClick={() => setScreen("start")}>Back</button>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main className="game-page">
-      <section className="terminal">
-        <div className="terminal-header">
-          <span className="dot red"></span>
-          <span className="dot yellow"></span>
-          <span className="dot green"></span>
-          <p>network-2-rewired.exe</p>
+    <main className="game">
+      <div className="goal">GOAL</div>
+
+      <div className="platform platform-1"></div>
+      <div className="platform platform-2"></div>
+      <div className="platform platform-3"></div>
+
+      {answerState && (
+        <div
+          className={`player-indicator ${answerState}`}
+          style={{
+            left: player.x,
+            top: player.y - 58,
+          }}
+        >
+          {SETTINGS[answerState].label}
         </div>
+      )}
 
-        <div className="terminal-body">
-          <div className="mission-box">
-            <h1>{scenario.title}</h1>
-            <p>{scenario.intro}</p>
-            <p>
-              <strong>Goal:</strong> {scenario.goal}
-            </p>
-          </div>
-
-          <div className="log">
-            {log.map((line, index) => (
-              <p key={index}>{line}</p>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit} className="command-line">
-            <span>&gt;</span>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              autoFocus
-              placeholder="type a command..."
-            />
-          </form>
+      {answerState && (
+        <div
+          className={`charge-bar ${answerState}`}
+          style={{
+            left: player.x - 35,
+            top: player.y - 38,
+          }}
+        >
+          <div style={{ width: `${chargePercent}%` }}></div>
         </div>
-      </section>
+      )}
+
+      <div
+        className="player"
+        style={{
+          left: player.x,
+          top: player.y,
+        }}
+      ></div>
+
+      {showQuestion && (
+        <div className="question-overlay">
+          <div className="question-modal">
+            <h2>{QUESTION.text}</h2>
+
+            <div className="answers">
+              {QUESTION.answers.map((answer) => (
+                <button key={answer.text} onClick={() => chooseAnswer(answer.result)}>
+                  {answer.text}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

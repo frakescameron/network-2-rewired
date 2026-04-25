@@ -4,127 +4,213 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #1f2937, #020617 70%);
-  color: #d1fae5;
-  font-family: Consolas, Monaco, monospace;
+  background: #080808;
+  color: white;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
 }
 
-.game-page {
-  min-height: 100vh;
+.start-screen,
+.game {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+.start-screen {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 30px;
+  background:
+    linear-gradient(#222 1px, transparent 1px),
+    linear-gradient(90deg, #222 1px, transparent 1px),
+    #111;
+  background-size: 24px 24px;
 }
 
-.terminal {
-  width: min(1000px, 100%);
-  min-height: 700px;
-  background: #020617;
-  border: 1px solid #334155;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 0 40px rgba(34, 197, 94, 0.18);
+.start-card {
+  width: min(520px, 90vw);
+  background: rgba(17, 17, 17, 0.94);
+  border: 1px solid #444;
+  border-radius: 20px;
+  padding: 32px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.08);
 }
 
-.terminal-header {
-  height: 42px;
-  background: #111827;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  border-bottom: 1px solid #334155;
+.start-card h1 {
+  margin: 0 0 12px;
+  font-size: 3rem;
+  line-height: 0.95;
 }
 
-.terminal-header p {
-  margin-left: 12px;
-  color: #94a3b8;
-  font-size: 0.9rem;
+.start-card p {
+  color: #ddd;
+  line-height: 1.5;
 }
 
-.dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.red {
-  background: #ef4444;
-}
-
-.yellow {
-  background: #eab308;
-}
-
-.green {
-  background: #22c55e;
-}
-
-.terminal-body {
-  padding: 24px;
-}
-
-.mission-box {
-  border: 1px solid #14532d;
-  background: rgba(20, 83, 45, 0.25);
-  padding: 18px;
-  border-radius: 12px;
-  margin-bottom: 22px;
-}
-
-.mission-box h1 {
-  margin: 0 0 10px;
-  color: #86efac;
-  font-size: 1.5rem;
-}
-
-.mission-box p {
-  margin: 6px 0;
-  color: #bbf7d0;
-}
-
-.log {
-  min-height: 420px;
-  max-height: 420px;
-  overflow-y: auto;
-  padding: 16px;
-  background: #020617;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-}
-
-.log p {
-  margin: 0 0 6px;
-  white-space: pre-wrap;
-}
-
-.command-line {
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #020617;
-  border: 1px solid #334155;
-  border-radius: 12px;
+.start-card button {
+  width: 100%;
+  margin-top: 12px;
   padding: 14px;
-}
-
-.command-line span {
-  color: #22c55e;
+  background: #222;
+  color: white;
+  border: 1px solid #666;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
   font-weight: bold;
 }
 
-.command-line input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #d1fae5;
-  font-family: inherit;
-  font-size: 1rem;
+.start-card button:hover {
+  background: #333;
 }
 
-.command-line input::placeholder {
-  color: #64748b;
+.game {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background-color: #111;
+  background-image:
+    linear-gradient(#222 1px, transparent 1px),
+    linear-gradient(90deg, #222 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.goal {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-weight: 900;
+  font-size: 1.2rem;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.player {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+}
+
+.player-indicator {
+  position: absolute;
+  transform: translateX(-50%);
+  font-weight: 900;
+  font-size: 0.8rem;
+  z-index: 4;
+  text-shadow: 2px 2px 0 #000;
+}
+
+.player-indicator.green {
+  color: #22c55e;
+}
+
+.player-indicator.yellow {
+  color: #eab308;
+}
+
+.player-indicator.red {
+  color: #ef4444;
+}
+
+.charge-bar {
+  position: absolute;
+  width: 70px;
+  height: 8px;
+  border: 1px solid white;
+  background: #111;
+  z-index: 4;
+}
+
+.charge-bar div {
+  height: 100%;
+}
+
+.charge-bar.green div {
+  background: #22c55e;
+}
+
+.charge-bar.yellow div {
+  background: #eab308;
+}
+
+.charge-bar.red div {
+  background: #ef4444;
+}
+
+.platform {
+  position: absolute;
+  height: 14px;
+  background: white;
+  border-radius: 999px;
+}
+
+.platform-1 {
+  width: 180px;
+  left: 38%;
+  top: 68%;
+}
+
+.platform-2 {
+  width: 150px;
+  left: 56%;
+  top: 45%;
+}
+
+.platform-3 {
+  width: 150px;
+  left: 40%;
+  top: 25%;
+}
+
+.question-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.68);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+}
+
+.question-modal {
+  width: min(520px, 90vw);
+  background: rgba(17, 17, 17, 0.96);
+  border: 1px solid #555;
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 0 45px rgba(255, 255, 255, 0.1);
+}
+
+.question-modal h2 {
+  margin-top: 0;
+  font-size: 1.8rem;
+}
+
+.answers {
+  display: grid;
+  gap: 12px;
+}
+
+.answers button {
+  padding: 14px;
+  background: #222;
+  color: white;
+  border: 1px solid #666;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.answers button:hover {
+  background: #333;
 }
