@@ -80,13 +80,14 @@ body {
 
 .goal {
   position: absolute;
-  top: 30px;
-  left: 50%;
-  transform: translateX(-50%);
   color: white;
   font-weight: 900;
   font-size: 1.2rem;
   text-shadow: 2px 2px 0 #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid transparent;
 }
 
 .player {
