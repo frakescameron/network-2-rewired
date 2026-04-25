@@ -23,20 +23,21 @@ body {
   justify-content: center;
   align-items: center;
   background:
-    linear-gradient(#222 1px, transparent 1px),
-    linear-gradient(90deg, #222 1px, transparent 1px),
-    #111;
+    linear-gradient(#000000 1px),
+    linear-gradient(90deg, #000000 1px),
+    #000000;
   background-size: 24px 24px;
 }
 
 .start-card {
   width: min(520px, 90vw);
-  background: rgba(17, 17, 17, 0.94);
-  border: 1px solid #444;
   border-radius: 20px;
   padding: 32px;
   text-align: center;
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 0 60px rgba(0, 0, 0, 0.95),   /* strong separation */
+    0 0 25px rgba(255, 255, 255, 0.05); /* subtle glow */
 }
 
 .start-card h1 {
@@ -71,11 +72,7 @@ body {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background-color: #111;
-  background-image:
-    linear-gradient(#222 1px, transparent 1px),
-    linear-gradient(90deg, #222 1px, transparent 1px);
-  background-size: 24px 24px;
+  background: black;
 }
 
 .goal {
@@ -214,4 +211,38 @@ body {
 
 .answers button:hover {
   background: #333;
+}
+
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.bg-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.goal,
+.platform,
+.player,
+.player-indicator,
+.charge-bar {
+  z-index: 2;
+}
+
+.question-overlay {
+  z-index: 20;
 }

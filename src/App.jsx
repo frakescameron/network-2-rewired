@@ -11,18 +11,9 @@ const QUESTION = {
 };
 
 const SETTINGS = {
-  green: {
-    label: "GREEN",
-    maxChargeMs: 3000,
-  },
-  yellow: {
-    label: "YELLOW",
-    maxChargeMs: 10000,
-  },
-  red: {
-    label: "RED",
-    maxChargeMs: null,
-  },
+  green: { label: "GREEN", maxChargeMs: 3000 },
+  yellow: { label: "YELLOW", maxChargeMs: 10000 },
+  red: { label: "RED", maxChargeMs: null },
 };
 
 const PLAYER_SIZE = 28;
@@ -41,7 +32,7 @@ const goal = {
 };
 
 function App() {
-  const [screen, setScreen] = useState("start");
+  const [screen, setScreen] = useState("pre");
   const [showQuestion, setShowQuestion] = useState(false);
   const [won, setWon] = useState(false);
 
@@ -56,6 +47,10 @@ function App() {
   const [answerState, setAnswerState] = useState(null);
   const [maxChargeMs, setMaxChargeMs] = useState(3000);
   const [chargeMs, setChargeMs] = useState(0);
+
+  
+  const audioRef = useRef(null);
+  const startAudioRef = useRef(null);
 
   const keys = useRef({});
   const playerRef = useRef(player);
@@ -91,24 +86,68 @@ function App() {
     wonRef.current = won;
   }, [won]);
 
-  function startGame() {
-    setScreen("game");
-    setShowQuestion(true);
-    setWon(false);
-    setAnswerState(null);
-    setChargeMs(0);
-    chargeRef.current = 0;
+  function playMenuMusic() {
+    if (!startAudioRef.current) return;
 
-    const startingPlayer = {
-      x: 600,
-      y: window.innerHeight - 40,
-      vx: 0,
-      vy: 0,
-      grounded: true,
-    };
+    startAudioRef.current.volume = 0.4;
+    startAudioRef.current.play().catch((e) => console.log(e));
+  }
 
-    setPlayer(startingPlayer);
-    playerRef.current = startingPlayer;
+  function playGameMusic() {
+    if (!audioRef.current) return;
+
+    audioRef.current.volume = 0.4;
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch((e) => console.log(e));
+  }
+
+  function stopMenuMusic() {
+    if (!startAudioRef.current) return;
+
+    startAudioRef.current.pause();
+    startAudioRef.current.currentTime = 0;
+  }
+
+  function stopGameMusic() {
+    if (!audioRef.current) return;
+
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+  }
+
+ function startGame() {
+  stopMenuMusic();
+
+  setScreen("game");
+  setShowQuestion(true);
+  setWon(false);
+  setAnswerState(null);
+  setChargeMs(0);
+  chargeRef.current = 0;
+
+  setTimeout(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0.4;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((e) => console.log(e));
+    }
+  }, 0);
+
+  const startingPlayer = {
+    x: 600,
+    y: window.innerHeight - 40,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+  };
+
+  setPlayer(startingPlayer);
+  playerRef.current = startingPlayer;
+}
+
+  function backToStart() {
+    stopGameMusic();
+    setScreen("start");
   }
 
   function chooseAnswer(result) {
@@ -146,8 +185,7 @@ function App() {
     }
 
     const power = Math.min(chargeRef.current / maxChargeRef.current, 1);
-
-  const jumpPower = 6 + power * 13;
+    const jumpPower = 6 + power * 13;
 
     const nextPlayer = {
       ...p,
@@ -312,9 +350,55 @@ function App() {
 
   const chargePercent = Math.min((chargeMs / maxChargeMs) * 100, 100);
 
+  if (screen === "pre") {
+  return (
+    <main
+      className="start-screen"
+      onClick={() => {
+        playMenuMusic();
+        setScreen("start");
+      }}
+    >
+      <video
+        className="bg-video"
+        src="/video/start.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+
+      <audio ref={startAudioRef} src="/audio/ironclad.mp3" loop />
+      <audio
+          ref={audioRef}
+          src="/audio/chrometempest.mp3"
+          loop
+          preload="auto"
+        />
+
+      <div className="start-card">
+        <h1>Network 2: Rewired</h1>
+        <p>Click anywhere to start</p>
+      </div>
+    </main>
+  );
+}
+
   if (screen === "start") {
     return (
-      <main className="start-screen">
+      <main className="start-screen" onClick={playMenuMusic}>
+        <video
+          className="bg-video"
+          src="/video/start.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+
+        <audio ref={startAudioRef} src="/audio/ironclad.mp3" loop />
+        <audio ref={audioRef} src="/audio/chrometempest.mp3" loop />
+
         <div className="start-card">
           <h1>Network 2: Rewired</h1>
           <p>The network was fixed once. It did not stay that way.</p>
@@ -328,13 +412,25 @@ function App() {
 
   if (screen === "how") {
     return (
-      <main className="start-screen">
+      <main className="start-screen" onClick={playMenuMusic}>
+        <video
+          className="bg-video"
+          src="/video/start.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+
+        <audio ref={startAudioRef} src="/audio/ironclad.mp3" loop />
+        <audio ref={audioRef} src="/audio/chrometempest.mp3" loop />
+
         <div className="start-card">
           <h1>How to Play</h1>
           <p>Answer networking questions to control how your jump charges.</p>
           <p>Green = 3 second full charge.</p>
           <p>Yellow = 10 second full charge.</p>
-          <p>Red = random full charge between 1 and 60 seconds.</p>
+          <p>Red = random full charge between 1 and 30 seconds.</p>
           <p>Move with A / D or arrow keys. Hold SPACE to charge. Release SPACE to jump.</p>
 
           <button onClick={startGame}>Play</button>
@@ -346,6 +442,17 @@ function App() {
 
   return (
     <main className="game">
+      <video
+        className="bg-video"
+        src="/video/spacehole.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+
+      <audio ref={audioRef} src="/audio/chrometempest.mp3" loop />
+
       <div
         className="goal"
         style={{
@@ -425,7 +532,7 @@ function App() {
             <h2>You Win</h2>
             <p>The network survived. Somehow.</p>
             <button onClick={startGame}>Play Again</button>
-            <button onClick={() => setScreen("start")}>Main Menu</button>
+            <button onClick={backToStart}>Main Menu</button>
           </div>
         </div>
       )}
