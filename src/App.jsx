@@ -33,6 +33,16 @@ const platforms = [
   { id: 12, x: 760, y: 500, width: 170, height: 14 },
 ];
 
+const walls = [
+  { id: 1, x: 250, y: 2500, width: 24, height: 400 },
+  { id: 2, x: 1050, y: 1900, width: 24, height: 500 },
+];
+
+const slopes = [
+  { id: 1, x: 430, y: 2700, width: 260, height: 90, direction: "downRight" },
+  { id: 2, x: 620, y: 1500, width: 260, height: 90, direction: "downLeft" },
+];
+
 const goal = {
   x: 620,
   y: 220,
@@ -244,33 +254,126 @@ const nextPlayer = {
     );
   }
 
-  function handlePlatformCollision(oldP, newP) {
-    let p = { ...newP };
+function handlePlatformCollision(oldP, newP) {
+  let p = { ...newP };
 
-    for (const platform of platforms) {
-      const playerBottom = p.y + PLAYER_SIZE / 2;
-      const oldPlayerBottom = oldP.y + PLAYER_SIZE / 2;
+  for (const platform of platforms) {
+    const playerBottom = p.y + PLAYER_SIZE / 2;
+    const oldPlayerBottom = oldP.y + PLAYER_SIZE / 2;
 
-      const playerLeft = p.x - PLAYER_SIZE / 2;
-      const playerRight = p.x + PLAYER_SIZE / 2;
+    const playerLeft = p.x - PLAYER_SIZE / 2;
+    const playerRight = p.x + PLAYER_SIZE / 2;
 
-      const falling = p.vy >= 0;
+    const falling = p.vy >= 0;
 
-      const horizontallyOverlapping =
-        playerRight > platform.x && playerLeft < platform.x + platform.width;
+    const horizontallyOverlapping =
+      playerRight > platform.x &&
+      playerLeft < platform.x + platform.width;
 
-      const crossedPlatform =
-        oldPlayerBottom <= platform.y && playerBottom >= platform.y;
+    const crossedPlatform =
+      oldPlayerBottom <= platform.y &&
+      playerBottom >= platform.y;
 
-      if (falling && horizontallyOverlapping && crossedPlatform) {
-        p.y = platform.y - PLAYER_SIZE / 2;
-        p.vy = 0;
-        p.grounded = true;
+    if (falling && horizontallyOverlapping && crossedPlatform) {
+      p.y = platform.y - PLAYER_SIZE / 2;
+      
+      p.grounded = true;
+    }
+  }
+
+  return p;
+}
+
+function handleWallCollision(oldP, newP) {
+  let p = { ...newP };
+
+  for (const wall of walls) {
+    const playerTop = p.y - PLAYER_SIZE / 2;
+    const playerBottom = p.y + PLAYER_SIZE / 2;
+    const playerLeft = p.x - PLAYER_SIZE / 2;
+    const playerRight = p.x + PLAYER_SIZE / 2;
+
+    const overlaps =
+      playerRight > wall.x &&
+      playerLeft < wall.x + wall.width &&
+      playerBottom > wall.y &&
+      playerTop < wall.y + wall.height;
+
+    if (overlaps) {
+      // came from left → hit left side of wall
+      if (oldP.x < wall.x) {
+        p.x = wall.x - PLAYER_SIZE / 2;
+
+        // 🔥 bounce right → left
+        p.vx = -Math.abs(p.vx) * 0.8;
+      } else {
+        // came from right → hit right side
+        p.x = wall.x + wall.width + PLAYER_SIZE / 2;
+
+        // 🔥 bounce left → right
+        p.vx = Math.abs(p.vx) * 0.8;
       }
     }
-
-    return p;
   }
+
+  return p;
+}
+
+function handleSlopeCollision(oldP, newP) {
+  let p = { ...newP };
+
+  for (const slope of slopes) {
+    const playerBottom = p.y + PLAYER_SIZE / 2;
+    const oldBottom = oldP.y + PLAYER_SIZE / 2;
+
+    const playerLeft = p.x - PLAYER_SIZE / 2;
+    const playerRight = p.x + PLAYER_SIZE / 2;
+
+    const overlappingX =
+      playerRight > slope.x &&
+      playerLeft < slope.x + slope.width;
+
+    // get slope surface at player's X
+const t = (p.x - slope.x) / slope.width;
+
+let surfaceY;
+
+if (slope.direction === "downRight") {
+  surfaceY = slope.y + t * slope.height;
+} else {
+  surfaceY = slope.y + (1 - t) * slope.height;
+}
+
+// detect landing ANYWHERE on slope (not just top edge)
+// how close we are to the slope surface
+const distance = playerBottom - surfaceY;
+
+// snap if we’re near/into the slope while moving down or already on it
+if (
+  overlappingX &&
+  p.vy >= -2 &&
+  distance >= -4 &&   // slightly above is ok
+  distance <= 12      // slightly inside is ok
+) {
+      // treat like flat platform
+     // snap smoothly onto slope (no bounce)
+p.y = surfaceY - PLAYER_SIZE / 2;
+p.grounded = true;
+
+// kill vertical velocity so we don't re-trigger landing
+p.vy = 0;
+
+// smooth slide instead of hard overwrite
+const dir = slope.direction === "downRight" ? 1 : -1;
+const slideSpeed = 1.2;
+
+// blend instead of set (prevents jitter)
+p.vx = p.vx * 0.7 + dir * slideSpeed;
+    }
+  }
+
+  return p;
+}
 
   useEffect(() => {
     function keyDown(e) {
@@ -326,13 +429,14 @@ const nextPlayer = {
       const oldP = { ...playerRef.current };
       let p = { ...playerRef.current };
 
-      if (p.grounded) {
-  if (Math.abs(p.vx) < 0.5) p.vx = 0;
-  else p.vx *= 0.5;
+if (p.grounded) {
+  p.vx *= 0.92;   // light friction so slopes can still move you
 } else {
-  p.vx *= 1.002;
+  p.vx *= 0.995;  // slight air drag
 }
-      p.vy += .22;
+      if (!p.grounded) {
+        p.vy += 0.22;
+    }
 
       p.x += p.vx;
       p.y += p.vy;
@@ -348,12 +452,22 @@ const nextPlayer = {
         p.x = window.innerWidth - PLAYER_SIZE / 2;
         p.vx = 0;
       }
-
       p = handlePlatformCollision(oldP, p);
+      p = handleSlopeCollision(oldP, p);
+      p = handleWallCollision(oldP, p);
+
+      // 🔥 APPLY SLOPE SLIDE HERE (correct place)
+if (p.onSlope && p.grounded) {
+  const dir = p.onSlope === "downRight" ? 1 : -1;
+
+  const slideSpeed = 1.8;
+
+  p.vx += dir * slideSpeed;
+  p.vy += 0.3; // keeps player glued to slope
+}
 
     if (p.y > WORLD_HEIGHT - 40) {
         p.y = WORLD_HEIGHT - 40;
-        p.vy = 0;
         p.grounded = true;
       }
 
@@ -527,6 +641,41 @@ const nextPlayer = {
       width: platform.width,
       height: platform.height,
       objectFit: "cover",
+      pointerEvents: "none",
+    }}
+  />
+))}
+
+{walls.map((wall) => (
+  <img
+    key={wall.id}
+    src={`${BASE}Models/switcher.webp`}
+    style={{
+      position: "absolute",
+      left: wall.x,
+      top: wall.y - cameraY,
+      width: wall.height,
+      height: wall.width,
+      objectFit: "cover",
+      transform: "rotate(90deg) translateY(-100%)",
+      transformOrigin: "top left",
+      pointerEvents: "none",
+    }}
+  />
+))}
+
+{slopes.map((slope) => (
+  <img
+    key={slope.id}
+    src={`${BASE}Models/switcher.webp`}
+    style={{
+      position: "absolute",
+      left: slope.x,
+      top: slope.y - cameraY,
+      width: slope.width,
+      height: slope.height, // ✅ MATCH REAL SIZE
+      transform: `rotate(${slope.direction === "downRight" ? 25 : -25}deg)`,
+      transformOrigin: "center",
       pointerEvents: "none",
     }}
   />

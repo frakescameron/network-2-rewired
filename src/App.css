@@ -246,3 +246,17 @@ body {
 .question-overlay {
   z-index: 20;
 }
+
+.wall {
+  position: absolute;
+  background: #444;
+  border: 2px solid white;
+  z-index: 3;
+}
+
+.slope {
+  position: absolute;
+  background: #666;
+  z-index: 3;
+}
+
