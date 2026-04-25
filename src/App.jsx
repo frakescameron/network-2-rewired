@@ -19,28 +19,41 @@ const SETTINGS = {
 const PLAYER_SIZE = 28;
 
 const platforms = [
-  { x: 520, y: 585, width: 180, height: 14 },
-  { x: 760, y: 390, width: 160, height: 14 },
-  { x: 520, y: 220, width: 160, height: 14 },
+  { id: 1, x: 520, y: 3000, width: 400, height: 14 },
+  { id: 2, x: 760, y: 2800, width: 180, height: 14 },
+  { id: 3, x: 430, y: 2580, width: 160, height: 14 },
+  { id: 4, x: 720, y: 2350, width: 150, height: 14 },
+  { id: 5, x: 390, y: 2120, width: 170, height: 14 },
+  { id: 6, x: 650, y: 1880, width: 160, height: 14 },
+  { id: 7, x: 900, y: 1650, width: 140, height: 14 },
+  { id: 8, x: 560, y: 1420, width: 150, height: 14 },
+  { id: 9, x: 310, y: 1180, width: 160, height: 14 },
+  { id: 10, x: 680, y: 950, width: 180, height: 14 },
+  { id: 11, x: 480, y: 720, width: 150, height: 14 },
+  { id: 12, x: 760, y: 500, width: 170, height: 14 },
 ];
 
 const goal = {
-  x: 650,
-  y: 40,
-  width: 160,
-  height: 40,
+  x: 620,
+  y: 220,
+  width: 180,
+  height: 45,
 };
 
 const BASE = import.meta.env.BASE_URL;
+const WORLD_HEIGHT = 3200;
+const CAMERA_DEAD_ZONE_Y = 280;
 
 function App() {
+  const [cameraY, setCameraY] = useState(WORLD_HEIGHT - window.innerHeight);
+  const cameraYRef = useRef(WORLD_HEIGHT - window.innerHeight);
   const [screen, setScreen] = useState("pre");
   const [showQuestion, setShowQuestion] = useState(false);
   const [won, setWon] = useState(false);
 
   const [player, setPlayer] = useState({
     x: 600,
-    y: window.innerHeight - 40,
+    y: WORLD_HEIGHT - 40,
     vx: 0,
     vy: 0,
     grounded: true,
@@ -63,6 +76,10 @@ function App() {
   const showQuestionRef = useRef(showQuestion);
   const answerStateRef = useRef(answerState);
   const wonRef = useRef(won);
+
+  useEffect(() => {
+  cameraYRef.current = cameraY;
+}, [cameraY]);
 
   useEffect(() => {
     playerRef.current = player;
@@ -118,8 +135,10 @@ function App() {
   }
 
  function startGame() {
-  stopMenuMusic();
+  setCameraY(WORLD_HEIGHT - window.innerHeight);
+  cameraYRef.current = WORLD_HEIGHT - window.innerHeight;
 
+  stopMenuMusic();
   setScreen("game");
   setShowQuestion(true);
   setWon(false);
@@ -137,7 +156,7 @@ function App() {
 
   const startingPlayer = {
     x: 600,
-    y: window.innerHeight - 40,
+    y: WORLD_HEIGHT - 40,
     vx: 0,
     vy: 0,
     grounded: true,
@@ -332,8 +351,8 @@ const nextPlayer = {
 
       p = handlePlatformCollision(oldP, p);
 
-      if (p.y > window.innerHeight - 40) {
-        p.y = window.innerHeight - 40;
+    if (p.y > WORLD_HEIGHT - 40) {
+        p.y = WORLD_HEIGHT - 40;
         p.vy = 0;
         p.grounded = true;
       }
@@ -342,6 +361,27 @@ const nextPlayer = {
         setWon(true);
         wonRef.current = true;
       }
+
+    let nextCameraY = cameraYRef.current;
+            const playerScreenY = p.y - nextCameraY;
+
+            // Follow upward
+            if (playerScreenY < CAMERA_DEAD_ZONE_Y) {
+              nextCameraY = p.y - CAMERA_DEAD_ZONE_Y;
+            }
+
+            // Follow downward when falling
+            if (playerScreenY > window.innerHeight - 260) {
+              nextCameraY = p.y - (window.innerHeight - 260);
+            }
+
+            nextCameraY = Math.max(
+              0,
+              Math.min(nextCameraY, WORLD_HEIGHT - window.innerHeight)
+            );
+
+            cameraYRef.current = nextCameraY;
+            setCameraY(nextCameraY);
 
       playerRef.current = p;
       setPlayer(p);
@@ -467,7 +507,7 @@ const nextPlayer = {
         className="goal"
         style={{
           left: goal.x,
-          top: goal.y,
+          top: goal.y - cameraY,
           width: goal.width,
           height: goal.height,
         }}
@@ -475,25 +515,29 @@ const nextPlayer = {
         GOAL
       </div>
 
-      {platforms.map((platform, index) => (
-        <div
-          key={index}
-          className="platform"
-          style={{
-            left: platform.x,
-            top: platform.y,
-            width: platform.width,
-            height: platform.height,
-          }}
-        ></div>
-      ))}
+{platforms.map((platform) => (
+  <img
+    key={platform.id}
+    src={`${BASE}Models/switcher.webp`}
+    className="platform"
+    style={{
+      position: "absolute",
+      left: platform.x,
+      top: platform.y - cameraY,
+      width: platform.width,
+      height: platform.height,
+      objectFit: "cover",
+      pointerEvents: "none",
+    }}
+  />
+))}
 
       {answerState && (
         <div
           className={`player-indicator ${answerState}`}
           style={{
             left: player.x,
-            top: player.y - 58,
+            top: player.y - cameraY - 58,
           }}
         >
           {SETTINGS[answerState].label}
@@ -505,20 +549,26 @@ const nextPlayer = {
           className={`charge-bar ${answerState}`}
           style={{
             left: player.x - 35,
-            top: player.y - 38,
+            top: player.y - cameraY - 38,
           }}
         >
           <div style={{ width: `${chargePercent}%` }}></div>
         </div>
       )}
 
-      <div
-        className="player"
-        style={{
-          left: player.x,
-          top: player.y,
-        }}
-      ></div>
+ <img
+  src={`${BASE}Models/rjcuteyes.jpg`}
+  className="player"
+  style={{
+    position: "absolute",
+    left: player.x,
+    top: player.y - cameraY - 6,
+    width: 40,
+    height: 40,
+    transform: "translate(-50%, -50%)",
+    pointerEvents: "none",
+  }}
+/>
 
       {showQuestion && (
         <div className="question-overlay">
