@@ -14,9 +14,11 @@ const PLAYER_SIZE = 35;
 const BASE = import.meta.env.BASE_URL;
 const CAMERA_DEAD_ZONE_Y = 280;
 
+
 function App() {
   const [levelIndex, setLevelIndex] = useState(0);
   const currentLevel = levels[levelIndex];
+  const [levelCleared, setLevelCleared] = useState(false);
 
   const platforms = currentLevel.platforms;
   const walls = currentLevel.walls;
@@ -25,7 +27,8 @@ function App() {
   const WORLD_HEIGHT = currentLevel.worldHeight;
 
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [jumpCount, setJumpCount] = useState(0);
+  const [questionJumpCount, setQuestionJumpCount] = useState(0);
+  const [levelJumpCount, setLevelJumpCount] = useState(0);
 
   const currentQuestion = questions[questionIndex];
 
@@ -98,6 +101,19 @@ function App() {
     wonRef.current = won;
   }, [won]);
 
+
+  function continueToNextLevel() {
+    setLevelCleared(false);
+    setLevelJumpCount(0);
+    setQuestionJumpCount(0);
+    goToNextLevel();
+  }
+
+  function exitToMenu() {
+    setLevelCleared(false);
+    stopGameMusic();
+    setScreen("start");
+  }
     
   function goToNextLevel() {
     const nextIndex = levelIndex + 1;
@@ -293,18 +309,23 @@ const nextPlayer = {
   grounded: false,
 };
 
-setJumpCount((count) => {
+setLevelJumpCount((count) => count + 1);
+
+setQuestionJumpCount((count) => {
   const nextCount = count + 1;
 
-  if (nextCount >= 5) {
+  if (nextCount >= 10) {
     setShowQuestion(true);
-    setQuestionIndex((index) => (index + 1) % questions.length);
+    setQuestionIndex((index) => {
+      const nextIndex = index + 1;
+      return nextIndex >= questions.length ? 0 : nextIndex;
+    });
+
     return 0;
   }
 
   return nextCount;
 });
-
     setPlayer(nextPlayer);
     playerRef.current = nextPlayer;
 
@@ -573,7 +594,7 @@ if (p.y > WORLD_HEIGHT + 100) {
 }
 
 if (checkGoalCollision(p)) {
-  goToNextLevel();
+  setLevelCleared(true);
   animationId = requestAnimationFrame(gameLoop);
   return;
 }
@@ -712,9 +733,10 @@ if (checkGoalCollision(p)) {
   return (
     <main className="game">
       
-    <div className="death-counter">
-      ERRORS: {deaths.toString(2).padStart(8, "0")}
-    </div>
+<div className="hud">
+  <div>ERRORS: {deaths.toString(2).padStart(8, "0")}</div>
+  <div>JUMPS: {levelJumpCount.toString(2).padStart(8, "0")}</div>
+</div>
 
       <video
         className="bg-video"
@@ -846,7 +868,23 @@ if (checkGoalCollision(p)) {
           </div>
         </div>
       )}
+      {levelCleared && (
+        <div className="question-overlay">
+          <div className="question-modal">
+            <h2>LEVEL COMPLETE</h2>
 
+            <p>{currentLevel.name} cleared.</p>
+
+            <p>
+              JUMPS: {levelJumpCount} <br />
+              ERRORS: {deaths}
+            </p>
+
+            <button onClick={continueToNextLevel}>Next Level</button>
+            <button onClick={exitToMenu}>Exit</button>
+          </div>
+        </div>
+      )}
       {won && (
         <div className="question-overlay">
           <div className="question-modal">
