@@ -16,7 +16,7 @@ const SETTINGS = {
   red: { label: "UNSTABLE", maxChargeMs: null },
 };
 
-const PLAYER_SIZE = 28;
+const PLAYER_SIZE = 35;
 
 const platforms = [
   { id: 1, x: 520, y: 3000, width: 400, height: 14 },
@@ -789,14 +789,14 @@ if (p.y > WORLD_HEIGHT + 100) {
       )}
 
  <img
-  src={`${BASE}Models/rjcuteyes.jpg`}
+  src={`${BASE}Models/rjcuteyes.PNG`}
   className="player"
   style={{
     position: "absolute",
     left: player.x,
     top: player.y - cameraY - 6,
-    width: 40,
-    height: 40,
+    width: 60,
+    height: 60,
     transform: "translate(-50%, -50%)",
     pointerEvents: "none",
   }}

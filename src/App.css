@@ -89,12 +89,9 @@ body {
 
 .player {
   position: absolute;
-  width: 28px;
-  height: 28px;
-  background: white;
-  border-radius: 50%;
   transform: translate(-50%, -50%);
-  z-index: 3;
+  background: none;       /* remove white */
+  border-radius: 0;       /* remove circle */
 }
 
 .player-indicator {
