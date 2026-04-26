@@ -1,14 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-
-const QUESTION = {
-  text: "What port does HTTPS usually use?",
-  answers: [
-    { text: "443", result: "green" },
-    { text: "80", result: "yellow" },
-    { text: "21", result: "red" },
-  ],
-};
+import { levels } from "./levels";
+import { questions } from "./questions";
 
 const SETTINGS = {
   green: { label: "OPTIMAL", maxChargeMs: 2000 },
@@ -18,45 +11,33 @@ const SETTINGS = {
 
 const PLAYER_SIZE = 35;
 
-const platforms = [
-  { id: 1, x: 520, y: 3000, width: 400, height: 14 },
-  { id: 2, x: 760, y: 2800, width: 180, height: 14 },
-  { id: 3, x: 430, y: 2580, width: 160, height: 14 },
-  { id: 4, x: 720, y: 2350, width: 150, height: 14 },
-  { id: 5, x: 390, y: 2120, width: 170, height: 14 },
-  { id: 6, x: 650, y: 1880, width: 160, height: 14 },
-  { id: 7, x: 900, y: 1650, width: 140, height: 14 },
-  { id: 8, x: 560, y: 1420, width: 150, height: 14 },
-  { id: 9, x: 310, y: 1180, width: 160, height: 14 },
-  { id: 10, x: 680, y: 950, width: 180, height: 14 },
-  { id: 11, x: 480, y: 720, width: 150, height: 14 },
-  { id: 12, x: 760, y: 500, width: 170, height: 14 },
-];
-
-const walls = [
-  { id: 1, x: 250, y: 2500, width: 24, height: 400 },
-  { id: 2, x: 1050, y: 1900, width: 24, height: 500 },
-];
-
-const slopes = [
-  { id: 1, x: 430, y: 2700, width: 260, height: 90, direction: "downRight" },
-  { id: 2, x: 620, y: 1500, width: 260, height: 90, direction: "downLeft" },
-];
-
-const goal = {
-  x: 620,
-  y: 220,
-  width: 180,
-  height: 45,
-};
-
 const BASE = import.meta.env.BASE_URL;
-const WORLD_HEIGHT = 3200;
 const CAMERA_DEAD_ZONE_Y = 280;
 
 function App() {
+  const [levelIndex, setLevelIndex] = useState(0);
+  const currentLevel = levels[levelIndex];
+
+  const platforms = currentLevel.platforms;
+  const walls = currentLevel.walls;
+  const slopes = currentLevel.slopes;
+  const goal = currentLevel.goal;
+  const WORLD_HEIGHT = currentLevel.worldHeight;
+
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [jumpCount, setJumpCount] = useState(0);
+
+  const currentQuestion = questions[questionIndex];
+
+  const levelRef = useRef(currentLevel);
+
+    useEffect(() => {
+      levelRef.current = currentLevel;
+    }, [currentLevel]);
+
   const [cameraY, setCameraY] = useState(WORLD_HEIGHT - window.innerHeight);
   const cameraYRef = useRef(WORLD_HEIGHT - window.innerHeight);
+
   const [screen, setScreen] = useState("pre");
   const [showQuestion, setShowQuestion] = useState(false);
   const [won, setWon] = useState(false);
@@ -73,13 +54,11 @@ function App() {
   const [maxChargeMs, setMaxChargeMs] = useState(3000);
   const [chargeMs, setChargeMs] = useState(0);
 
-  
   const audioRef = useRef(null);
   const startAudioRef = useRef(null);
 
   const [deaths, setDeaths] = useState(0);
   const deathAudioRef = useRef(null);
-
 
   const keys = useRef({});
   const playerRef = useRef(player);
@@ -118,6 +97,45 @@ function App() {
   useEffect(() => {
     wonRef.current = won;
   }, [won]);
+
+    
+  function goToNextLevel() {
+    const nextIndex = levelIndex + 1;
+
+    if (nextIndex >= levels.length) {
+      setWon(true);
+      wonRef.current = true;
+      return;
+    }
+
+    const nextLevel = levels[nextIndex];
+    const spawnPlatform = nextLevel.platforms.find(
+      (platform) => platform.id === nextLevel.spawnPlatformId
+    );
+
+    const nextPlayer = {
+      x: spawnPlatform.x + spawnPlatform.width / 2,
+      y: spawnPlatform.y - PLAYER_SIZE / 2,
+      vx: 0,
+      vy: 0,
+      grounded: true,
+    };
+
+    setLevelIndex(nextIndex);
+    setPlayer(nextPlayer);
+    playerRef.current = nextPlayer;
+
+    setCameraY(nextLevel.worldHeight - window.innerHeight);
+    cameraYRef.current = nextLevel.worldHeight - window.innerHeight;
+
+    setShowQuestion(true);
+    setAnswerState(null);
+    setChargeMs(0);
+    chargeRef.current = 0;
+    chargingRef.current = false;
+}
+
+
 
   function playMenuMusic() {
     if (!startAudioRef.current) return;
@@ -189,7 +207,11 @@ function respawnPlayer() {
 
   setDeaths((count) => count + 1);
 
-  const spawnPlatform = platforms[0];
+  const current = levelRef.current;
+
+  const spawnPlatform = current.platforms.find(
+    (p) => p.id === current.spawnPlatformId
+  );
 
   const respawnedPlayer = {
     x: spawnPlatform.x + spawnPlatform.width / 2,
@@ -202,8 +224,8 @@ function respawnPlayer() {
   setPlayer(respawnedPlayer);
   playerRef.current = respawnedPlayer;
 
-  setCameraY(WORLD_HEIGHT - window.innerHeight);
-  cameraYRef.current = WORLD_HEIGHT - window.innerHeight;
+  setCameraY(current.worldHeight - window.innerHeight);
+  cameraYRef.current = current.worldHeight - window.innerHeight;
 
   chargingRef.current = false;
   chargeRef.current = 0;
@@ -271,6 +293,18 @@ const nextPlayer = {
   grounded: false,
 };
 
+setJumpCount((count) => {
+  const nextCount = count + 1;
+
+  if (nextCount >= 5) {
+    setShowQuestion(true);
+    setQuestionIndex((index) => (index + 1) % questions.length);
+    return 0;
+  }
+
+  return nextCount;
+});
+
     setPlayer(nextPlayer);
     playerRef.current = nextPlayer;
 
@@ -279,19 +313,21 @@ const nextPlayer = {
     setChargeMs(0);
   }
 
-  function checkGoalCollision(p) {
-    return (
-      p.x + PLAYER_SIZE / 2 > goal.x &&
-      p.x - PLAYER_SIZE / 2 < goal.x + goal.width &&
-      p.y + PLAYER_SIZE / 2 > goal.y &&
-      p.y - PLAYER_SIZE / 2 < goal.y + goal.height
-    );
-  }
+function checkGoalCollision(p) {
+  const goal = levelRef.current.goal;
+
+  return (
+    p.x + PLAYER_SIZE / 2 > goal.x &&
+    p.x - PLAYER_SIZE / 2 < goal.x + goal.width &&
+    p.y + PLAYER_SIZE / 2 > goal.y &&
+    p.y - PLAYER_SIZE / 2 < goal.y + goal.height
+  );
+}
 
 function handlePlatformCollision(oldP, newP) {
   let p = { ...newP };
 
-  for (const platform of platforms) {
+  for (const platform of levelRef.current.platforms) {
     const playerLeft = p.x - PLAYER_SIZE / 2;
     const playerRight = p.x + PLAYER_SIZE / 2;
     const playerTop = p.y - PLAYER_SIZE / 2;
@@ -342,7 +378,7 @@ function handlePlatformCollision(oldP, newP) {
 function handleWallCollision(oldP, newP) {
   let p = { ...newP };
 
-  for (const wall of walls) {
+  for (const wall of levelRef.current.walls) {
     const playerTop = p.y - PLAYER_SIZE / 2;
     const playerBottom = p.y + PLAYER_SIZE / 2;
     const playerLeft = p.x - PLAYER_SIZE / 2;
@@ -377,7 +413,7 @@ function handleWallCollision(oldP, newP) {
 function handleSlopeCollision(oldP, newP) {
   let p = { ...newP };
 
-  for (const slope of slopes) {
+  for (const slope of levelRef.current.slopes) {
     const playerBottom = p.y + PLAYER_SIZE / 2;
     const playerTop = p.y - PLAYER_SIZE / 2;
     const oldBottom = oldP.y + PLAYER_SIZE / 2;
@@ -530,26 +566,17 @@ if (
   setChargeMs(0);
 }
 
-      // 🔥 APPLY SLOPE SLIDE HERE (correct place)
-if (p.onSlope && p.grounded) {
-  const dir = p.onSlope === "downRight" ? 1 : -1;
-
-  const slideSpeed = 1.8;
-
-  p.vx += dir * slideSpeed;
-  p.vy += 0.3; // keeps player glued to slope
-}
-
 if (p.y > WORLD_HEIGHT + 100) {
   respawnPlayer();
   animationId = requestAnimationFrame(gameLoop);
   return;
 }
 
-      if (checkGoalCollision(p)) {
-        setWon(true);
-        wonRef.current = true;
-      }
+if (checkGoalCollision(p)) {
+  goToNextLevel();
+  animationId = requestAnimationFrame(gameLoop);
+  return;
+}
 
     let nextCameraY = cameraYRef.current;
             const playerScreenY = p.y - nextCameraY;
@@ -700,17 +727,19 @@ if (p.y > WORLD_HEIGHT + 100) {
 
       <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
 
-      <div
-        className="goal"
-        style={{
-          left: goal.x,
-          top: goal.y - cameraY,
-          width: goal.width,
-          height: goal.height,
-        }}
-      >
-        GOAL
-      </div>
+    <img
+      src={`${BASE}Models/nas.png`}
+      className="goal"
+      style={{
+        position: "absolute",
+        left: goal.x,
+        top: goal.y - cameraY,
+        width: goal.width,
+        height: goal.height,
+        objectFit: "contain",
+        pointerEvents: "none",
+      }}
+    />
 
 {platforms.map((platform) => (
   <img
@@ -805,10 +834,10 @@ if (p.y > WORLD_HEIGHT + 100) {
       {showQuestion && (
         <div className="question-overlay">
           <div className="question-modal">
-            <h2>{QUESTION.text}</h2>
+            <h2>{currentQuestion.text}</h2>
 
             <div className="answers">
-              {QUESTION.answers.map((answer) => (
+              {currentQuestion.answers.map((answer) => (
                 <button key={answer.text} onClick={() => chooseAnswer(answer.result)}>
                   {answer.text}
                 </button>
