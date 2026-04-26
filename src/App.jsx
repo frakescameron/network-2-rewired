@@ -11,9 +11,9 @@ const QUESTION = {
 };
 
 const SETTINGS = {
-  green: { label: "GREEN", maxChargeMs: 2000 },
-  yellow: { label: "YELLOW", maxChargeMs: 5000 },
-  red: { label: "RED", maxChargeMs: null },
+  green: { label: "OPTIMAL", maxChargeMs: 2000 },
+  yellow: { label: "DEGRADED", maxChargeMs: 5000 },
+  red: { label: "UNSTABLE", maxChargeMs: null },
 };
 
 const PLAYER_SIZE = 28;
@@ -76,6 +76,10 @@ function App() {
   
   const audioRef = useRef(null);
   const startAudioRef = useRef(null);
+
+  const [deaths, setDeaths] = useState(0);
+  const deathAudioRef = useRef(null);
+
 
   const keys = useRef({});
   const playerRef = useRef(player);
@@ -164,16 +168,46 @@ function App() {
     }
   }, 0);
 
-  const startingPlayer = {
-    x: 600,
-    y: WORLD_HEIGHT - 40,
+    const spawnPlatform = platforms[0];
+
+    const startingPlayer = {
+      x: spawnPlatform.x + spawnPlatform.width / 2,
+      y: spawnPlatform.y - PLAYER_SIZE / 2,
+      vx: 0,
+      vy: 0,
+      grounded: true,
+    };
+
+  setPlayer(startingPlayer);
+  playerRef.current = startingPlayer;
+}
+
+function respawnPlayer() {
+  const deathSound = new Audio(`${BASE}audio/dial.mp3`);
+  deathSound.volume = 0.7;
+  deathSound.play().catch((e) => console.log(e));
+
+  setDeaths((count) => count + 1);
+
+  const spawnPlatform = platforms[0];
+
+  const respawnedPlayer = {
+    x: spawnPlatform.x + spawnPlatform.width / 2,
+    y: spawnPlatform.y - PLAYER_SIZE / 2,
     vx: 0,
     vy: 0,
     grounded: true,
   };
 
-  setPlayer(startingPlayer);
-  playerRef.current = startingPlayer;
+  setPlayer(respawnedPlayer);
+  playerRef.current = respawnedPlayer;
+
+  setCameraY(WORLD_HEIGHT - window.innerHeight);
+  cameraYRef.current = WORLD_HEIGHT - window.innerHeight;
+
+  chargingRef.current = false;
+  chargeRef.current = 0;
+  setChargeMs(0);
 }
 
   function backToStart() {
@@ -207,12 +241,12 @@ function App() {
   function releaseJump() {
     const p = playerRef.current;
 
-    if (
-      !p.grounded ||
+if (
       showQuestionRef.current ||
       screenRef.current !== "game" ||
       !answerStateRef.current ||
-      wonRef.current
+      wonRef.current ||
+      !chargingRef.current
     ) {
       return;
     }
@@ -258,26 +292,47 @@ function handlePlatformCollision(oldP, newP) {
   let p = { ...newP };
 
   for (const platform of platforms) {
-    const playerBottom = p.y + PLAYER_SIZE / 2;
-    const oldPlayerBottom = oldP.y + PLAYER_SIZE / 2;
-
     const playerLeft = p.x - PLAYER_SIZE / 2;
     const playerRight = p.x + PLAYER_SIZE / 2;
+    const playerTop = p.y - PLAYER_SIZE / 2;
+    const playerBottom = p.y + PLAYER_SIZE / 2;
 
-    const falling = p.vy >= 0;
+    const oldLeft = oldP.x - PLAYER_SIZE / 2;
+    const oldRight = oldP.x + PLAYER_SIZE / 2;
+    const oldTop = oldP.y - PLAYER_SIZE / 2;
+    const oldBottom = oldP.y + PLAYER_SIZE / 2;
 
-    const horizontallyOverlapping =
+    const overlaps =
       playerRight > platform.x &&
-      playerLeft < platform.x + platform.width;
+      playerLeft < platform.x + platform.width &&
+      playerBottom > platform.y &&
+      playerTop < platform.y + platform.height;
 
-    const crossedPlatform =
-      oldPlayerBottom <= platform.y &&
-      playerBottom >= platform.y;
+    if (!overlaps) continue;
 
-    if (falling && horizontallyOverlapping && crossedPlatform) {
+    // Land on top
+    if (oldBottom <= platform.y) {
       p.y = platform.y - PLAYER_SIZE / 2;
-      
+      p.vy = 0;
       p.grounded = true;
+    }
+
+    // Hit underside
+    else if (oldTop >= platform.y + platform.height) {
+      p.y = platform.y + platform.height + PLAYER_SIZE / 2;
+      p.vy = 0;
+    }
+
+    // Hit left side
+    else if (oldRight <= platform.x) {
+      p.x = platform.x - PLAYER_SIZE / 2;
+      p.vx = -Math.abs(p.vx) * 0.4;
+    }
+
+    // Hit right side
+    else if (oldLeft >= platform.x + platform.width) {
+      p.x = platform.x + platform.width + PLAYER_SIZE / 2;
+      p.vx = Math.abs(p.vx) * 0.4;
     }
   }
 
@@ -324,7 +379,9 @@ function handleSlopeCollision(oldP, newP) {
 
   for (const slope of slopes) {
     const playerBottom = p.y + PLAYER_SIZE / 2;
+    const playerTop = p.y - PLAYER_SIZE / 2;
     const oldBottom = oldP.y + PLAYER_SIZE / 2;
+    const oldTop = oldP.y - PLAYER_SIZE / 2;
 
     const playerLeft = p.x - PLAYER_SIZE / 2;
     const playerRight = p.x + PLAYER_SIZE / 2;
@@ -333,42 +390,45 @@ function handleSlopeCollision(oldP, newP) {
       playerRight > slope.x &&
       playerLeft < slope.x + slope.width;
 
-    // get slope surface at player's X
-const t = (p.x - slope.x) / slope.width;
+    if (!overlappingX) continue;
 
-let surfaceY;
+    const t = (p.x - slope.x) / slope.width;
 
-if (slope.direction === "downRight") {
-  surfaceY = slope.y + t * slope.height;
-} else {
-  surfaceY = slope.y + (1 - t) * slope.height;
-}
+    let surfaceY;
 
-// detect landing ANYWHERE on slope (not just top edge)
-// how close we are to the slope surface
-const distance = playerBottom - surfaceY;
+    if (slope.direction === "downRight") {
+      surfaceY = slope.y + t * slope.height;
+    } else {
+      surfaceY = slope.y + (1 - t) * slope.height;
+    }
 
-// snap if we’re near/into the slope while moving down or already on it
-if (
-  overlappingX &&
-  p.vy >= -2 &&
-  distance >= -4 &&   // slightly above is ok
-  distance <= 12      // slightly inside is ok
-) {
-      // treat like flat platform
-     // snap smoothly onto slope (no bounce)
-p.y = surfaceY - PLAYER_SIZE / 2;
-p.grounded = true;
+    // block jumping up through the diagonal platform
+    const hitUnderside =
+      oldTop >= surfaceY &&
+      playerTop <= surfaceY &&
+      p.vy < 0;
 
-// kill vertical velocity so we don't re-trigger landing
-p.vy = 0;
+    if (hitUnderside) {
+      p.y = surfaceY + PLAYER_SIZE / 2;
+      p.vy = 0;
+      return p;
+    }
 
-// smooth slide instead of hard overwrite
-const dir = slope.direction === "downRight" ? 1 : -1;
-const slideSpeed = 1.2;
+    const distance = playerBottom - surfaceY;
 
-// blend instead of set (prevents jitter)
-p.vx = p.vx * 0.7 + dir * slideSpeed;
+    if (
+      p.vy >= -2 &&
+      distance >= -4 &&
+      distance <= 12
+    ) {
+      p.y = surfaceY - PLAYER_SIZE / 2;
+      p.grounded = true;
+      p.vy = 0;
+
+      const dir = slope.direction === "downRight" ? 1 : -1;
+      const slideSpeed = 1.2;
+
+      p.vx = p.vx * 0.7 + dir * slideSpeed;
     }
   }
 
@@ -456,6 +516,20 @@ if (p.grounded) {
       p = handleSlopeCollision(oldP, p);
       p = handleWallCollision(oldP, p);
 
+      // allow holding SPACE before landing to start charging once grounded
+if (
+  p.grounded &&
+  keys.current.Space &&
+  !chargingRef.current &&
+  !showQuestionRef.current &&
+  answerStateRef.current &&
+  !wonRef.current
+) {
+  chargingRef.current = true;
+  chargeRef.current = 0;
+  setChargeMs(0);
+}
+
       // 🔥 APPLY SLOPE SLIDE HERE (correct place)
 if (p.onSlope && p.grounded) {
   const dir = p.onSlope === "downRight" ? 1 : -1;
@@ -466,10 +540,11 @@ if (p.onSlope && p.grounded) {
   p.vy += 0.3; // keeps player glued to slope
 }
 
-    if (p.y > WORLD_HEIGHT - 40) {
-        p.y = WORLD_HEIGHT - 40;
-        p.grounded = true;
-      }
+if (p.y > WORLD_HEIGHT + 100) {
+  respawnPlayer();
+  animationId = requestAnimationFrame(gameLoop);
+  return;
+}
 
       if (checkGoalCollision(p)) {
         setWon(true);
@@ -562,6 +637,9 @@ if (p.onSlope && p.grounded) {
 
         <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
         <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
+        <audio ref={deathAudioRef} src={`${BASE}audio/dial.mp3`} preload="auto" />
+
+
 
         <div className="start-card">
           <h1>Network 2: Rewired</h1>
@@ -592,9 +670,9 @@ if (p.onSlope && p.grounded) {
         <div className="start-card">
           <h1>How to Play</h1>
           <p>Answer networking questions to control how your jump charges.</p>
-          <p>Green = 3 second full charge.</p>
-          <p>Yellow = 10 second full charge.</p>
-          <p>Red = random full charge between 1 and 30 seconds.</p>
+          <p>Optimal = 3 second full charge.</p>
+          <p>Degraded = 10 second full charge.</p>
+          <p>Unstable = random full charge between 1 and 30 seconds.</p>
           <p>Move with A / D or arrow keys. Hold SPACE to charge. Release SPACE to jump.</p>
 
           <button onClick={startGame}>Play</button>
@@ -606,6 +684,11 @@ if (p.onSlope && p.grounded) {
 
   return (
     <main className="game">
+      
+    <div className="death-counter">
+      ERRORS: {deaths.toString(2).padStart(8, "0")}
+    </div>
+
       <video
         className="bg-video"
         src={`${BASE}video/spacehole.mp4`}
