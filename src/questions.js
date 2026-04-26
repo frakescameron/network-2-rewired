@@ -16,22 +16,6 @@ export const questions = [
     ],
   },
   {
-    text: "What port does HTTP usually use?",
-    answers: [
-      { text: "443", result: "yellow" },
-      { text: "80", result: "green" },
-      { text: "22", result: "red" },
-    ],
-  },
-  {
-    text: "What port does HTTPS usually use?",
-    answers: [
-      { text: "443", result: "green" },
-      { text: "80", result: "yellow" },
-      { text: "25", result: "red" },
-    ],
-  },
-  {
     text: "What port does SSH use?",
     answers: [
       { text: "23", result: "yellow" },
