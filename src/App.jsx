@@ -7,7 +7,7 @@ import { dialogue } from "./dialogue";
 const SETTINGS = {
   green: { label: "OPTIMAL", maxChargeMs: 2000 },
   yellow: { label: "DEGRADED", maxChargeMs: 5000 },
-  red: { label: "UNSTABLE", maxChargeMs: null },
+  red: { label: "UNSTABLE", maxChargeMs: 500 },
 };
 
 const PLAYER_SIZE = 35;
@@ -350,8 +350,7 @@ function respawnPlayer() {
     
 
     if (result === "red") {
-      const cursedCharge = Math.floor(Math.random() * 29000) + 1000;
-      setMaxChargeMs(cursedCharge);
+      setMaxChargeMs(100);
     }
 
     setChargeMs(0);
@@ -861,7 +860,7 @@ if (checkGoalCollision(p)) {
           <p>Answer networking questions to control how your jump charges.</p>
           <p>Optimal = 3 second full charge.</p>
           <p>Degraded = 10 second full charge.</p>
-          <p>Unstable = random full charge between 1 and 30 seconds.</p>
+          <p>Unstable = 1 second full charge.</p>
           <p>Move with A / D or arrow keys. Hold SPACE to charge. Release SPACE to jump.</p>
 
           <button onClick={startGame}>Play</button>
