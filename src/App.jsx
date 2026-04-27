@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { levels } from "./levels";
 import { questions } from "./questions";
+import { dialogue } from "./dialogue";
 
 const SETTINGS = {
   green: { label: "OPTIMAL", maxChargeMs: 2000 },
@@ -25,6 +26,16 @@ function App() {
   const slopes = currentLevel.slopes;
   const goal = currentLevel.goal;
   const WORLD_HEIGHT = currentLevel.worldHeight;
+  const [displayedText, setDisplayedText] = useState("");
+
+  const [showDialogue, setShowDialogue] = useState(false);
+  const [dialogueIndex, setDialogueIndex] = useState(0);
+  const dialogueAudioRef = useRef(null);
+  const skipTypingRef = useRef(false);
+  const typingIntervalRef = useRef(null);
+
+  const currentDialogueSet = dialogue[`level${levelIndex}`] || [];
+  const currentLine = currentDialogueSet[dialogueIndex];
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questionJumpCount, setQuestionJumpCount] = useState(0);
@@ -63,6 +74,11 @@ function App() {
   const [deaths, setDeaths] = useState(0);
   const deathAudioRef = useRef(null);
 
+  const showDialogueRef = useRef(showDialogue);
+    useEffect(() => {
+      showDialogueRef.current = showDialogue;
+    }, [showDialogue]);
+
   const keys = useRef({});
   const playerRef = useRef(player);
   const chargingRef = useRef(false);
@@ -72,6 +88,76 @@ function App() {
   const showQuestionRef = useRef(showQuestion);
   const answerStateRef = useRef(answerState);
   const wonRef = useRef(won);
+  const displayedTextRef = useRef(displayedText);
+  const currentLineRef = useRef(currentLine);
+  const currentDialogueSetRef = useRef(currentDialogueSet);
+
+useEffect(() => {
+  if (screen !== "game") return;
+  if (!audioRef.current) return;
+
+  audioRef.current.pause();
+  audioRef.current.src = `${BASE}audio/${currentLevel.music}`;
+  audioRef.current.currentTime = 0;
+  audioRef.current.volume = 0.4;
+  audioRef.current.play().catch((e) => console.log(e));
+}, [levelIndex, screen]);
+
+useEffect(() => {
+  displayedTextRef.current = displayedText;
+}, [displayedText]);
+
+useEffect(() => {
+  currentLineRef.current = currentLine;
+  currentDialogueSetRef.current = currentDialogueSet;
+}, [currentLine, currentDialogueSet]);
+
+useEffect(() => {
+  if (!showDialogue || !currentLine) return;
+
+  if (typingIntervalRef.current) {
+    clearInterval(typingIntervalRef.current);
+  }
+
+  let i = 0;
+  skipTypingRef.current = false;
+  setDisplayedText("");
+  displayedTextRef.current = "";
+
+  typingIntervalRef.current = setInterval(() => {
+    if (skipTypingRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+      return;
+    }
+
+    i++;
+    const nextText = currentLine.text.slice(0, i);
+
+    setDisplayedText(nextText);
+    displayedTextRef.current = nextText;
+
+    if (i >= currentLine.text.length) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+  }, 40);
+
+  return () => {
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+  };
+}, [dialogueIndex, showDialogue]);
+
+  useEffect(() => {
+  if (!showDialogue || !currentLine) return;
+
+  const audio = new Audio(`${BASE}audio/${currentLine.voice}`);
+  audio.volume = 0.7;
+  audio.play().catch(() => {});
+}, [dialogueIndex, showDialogue]);
 
   useEffect(() => {
   cameraYRef.current = cameraY;
@@ -137,6 +223,9 @@ function App() {
       grounded: true,
     };
 
+
+    setShowDialogue(true);
+    setDialogueIndex(0);
     setLevelIndex(nextIndex);
     setPlayer(nextPlayer);
     playerRef.current = nextPlayer;
@@ -144,7 +233,7 @@ function App() {
     setCameraY(nextLevel.worldHeight - window.innerHeight);
     cameraYRef.current = nextLevel.worldHeight - window.innerHeight;
 
-    setShowQuestion(true);
+    setShowQuestion(false);
     setAnswerState(null);
     setChargeMs(0);
     chargeRef.current = 0;
@@ -187,20 +276,14 @@ function App() {
   cameraYRef.current = WORLD_HEIGHT - window.innerHeight;
 
   stopMenuMusic();
+  setShowDialogue(true);
+  setDialogueIndex(0);
   setScreen("game");
-  setShowQuestion(true);
+  setShowQuestion(false);
   setWon(false);
   setAnswerState(null);
   setChargeMs(0);
   chargeRef.current = 0;
-
-  setTimeout(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = 0.4;
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch((e) => console.log(e));
-    }
-  }, 0);
 
     const spawnPlatform = platforms[0];
 
@@ -395,6 +478,13 @@ function handlePlatformCollision(oldP, newP) {
 
   return p;
 }
+    function skipDialogue() {
+      setShowDialogue(false);
+      setDialogueIndex(0);
+      setDisplayedText("");
+      setShowQuestion(true);
+    } 
+
 
 function handleWallCollision(oldP, newP) {
   let p = { ...newP };
@@ -492,43 +582,89 @@ function handleSlopeCollision(oldP, newP) {
   return p;
 }
 
-  useEffect(() => {
-    function keyDown(e) {
-      keys.current[e.code] = true;
+ useEffect(() => {
+  function keyDown(e) {
+    keys.current[e.code] = true;
 
-      if (
-        e.code === "Space" &&
-        playerRef.current.grounded &&
-        !chargingRef.current &&
-        screenRef.current === "game" &&
-        !showQuestionRef.current &&
-        answerStateRef.current &&
-        !wonRef.current
-      ) {
-        e.preventDefault();
-        chargingRef.current = true;
-        chargeRef.current = 0;
-        setChargeMs(0);
-      }
+    if (e.code === "Escape" && showDialogueRef.current) {
+      e.preventDefault();
+      skipDialogue();
+      return;
     }
 
-    function keyUp(e) {
-      keys.current[e.code] = false;
+    if (e.code === "Space" && showDialogueRef.current) {
+      e.preventDefault();
 
-      if (e.code === "Space") {
-        e.preventDefault();
+      const line = currentLineRef.current;
+      const set = currentDialogueSetRef.current;
+
+      if (!line) return;
+
+      if (displayedTextRef.current !== line.text) {
+        skipTypingRef.current = true;
+
+        if (typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
+
+        setDisplayedText(line.text);
+        displayedTextRef.current = line.text;
+        return;
+      }
+
+      setDialogueIndex((i) => {
+        const next = i + 1;
+
+        if (next >= set.length) {
+          setShowDialogue(false);
+          setShowQuestion(true);
+          return 0;
+        }
+
+        return next;
+      });
+
+      return;
+    }
+
+    if (
+      e.code === "Space" &&
+      playerRef.current.grounded &&
+      !chargingRef.current &&
+      screenRef.current === "game" &&
+      !showDialogueRef.current &&
+      !showQuestionRef.current &&
+      answerStateRef.current &&
+      !wonRef.current
+    ) {
+      e.preventDefault();
+      chargingRef.current = true;
+      chargeRef.current = 0;
+      setChargeMs(0);
+    }
+  }
+
+  function keyUp(e) {
+    keys.current[e.code] = false;
+
+    if (e.code === "Space") {
+      e.preventDefault();
+
+      if (!showDialogueRef.current) {
         releaseJump();
       }
     }
+  }
 
-    window.addEventListener("keydown", keyDown);
-    window.addEventListener("keyup", keyUp);
+  window.addEventListener("keydown", keyDown);
+  window.addEventListener("keyup", keyUp);
 
-    return () => {
-      window.removeEventListener("keydown", keyDown);
-      window.removeEventListener("keyup", keyUp);
-    };
-  }, []);
+  return () => {
+    window.removeEventListener("keydown", keyDown);
+    window.removeEventListener("keyup", keyUp);
+  };
+}, []);
 
   useEffect(() => {
     let lastTime = performance.now();
@@ -538,7 +674,12 @@ function handleSlopeCollision(oldP, newP) {
       const delta = time - lastTime;
       lastTime = time;
 
-      if (screenRef.current !== "game" || wonRef.current) {
+      if (
+          screenRef.current !== "game" ||
+          wonRef.current ||
+          showDialogueRef.current ||
+          levelCleared
+        ) {
         animationId = requestAnimationFrame(gameLoop);
         return;
       }
@@ -684,7 +825,7 @@ if (checkGoalCollision(p)) {
         />
 
         <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
-        <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
+        <audio ref={audioRef} loop />
         <audio ref={deathAudioRef} src={`${BASE}audio/dial.mp3`} preload="auto" />
 
 
@@ -713,7 +854,7 @@ if (checkGoalCollision(p)) {
         />
 
         <audio ref={startAudioRef} src={`${BASE}audio/ironclad.mp3`} loop />
-        <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
+        <audio ref={audioRef} loop />
 
         <div className="start-card">
           <h1>How to Play</h1>
@@ -747,7 +888,7 @@ if (checkGoalCollision(p)) {
         playsInline
       />
 
-      <audio ref={audioRef} src={`${BASE}audio/chrometempest.mp3`} loop />
+     <audio ref={audioRef} loop />
 
     <img
       src={`${BASE}Models/nas.png`}
@@ -852,6 +993,28 @@ if (checkGoalCollision(p)) {
     pointerEvents: "none",
   }}
 />
+
+{showDialogue && currentLine && (
+  <div className="codec">
+    <div className="codec-left">
+      <img src={`${BASE}Models/oldcodec.png`} />
+    </div>
+
+    <div className="codec-center">
+      <button className="codec-skip" onClick={skipDialogue}>
+        SKIP
+      </button>
+      <div className="codec-name">{currentLine.speaker}</div>
+      <div className="codec-text">{displayedText}</div>
+
+      <div className="codec-hint">PRESS SPACE TO CONTINUE...</div>
+    </div>
+
+    <div className="codec-right">
+      <img src={`${BASE}Models/L.PNG`}/>
+    </div>
+  </div>
+)}
 
       {showQuestion && (
         <div className="question-overlay">

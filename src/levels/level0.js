@@ -1,5 +1,6 @@
 export const level0 = {
   name: "Level 0: Open Ports",
+  music: "Factory.mp3",
   worldHeight: 3200,
   spawnPlatformId: 1,
 
