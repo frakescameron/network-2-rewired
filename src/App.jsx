@@ -926,14 +926,16 @@ if (chargingRef.current) {
   <div>UNSTABLE: {unstableStreak}/3</div>
 </div>
 
-      <video
-        className="bg-video"
-        src={`${BASE}video/spacehole.mp4`}
-        autoPlay
-        loop
-        muted
-        playsInline
-      />
+    <video
+      key={currentLevel.background}
+      className="bg-video"
+      autoPlay
+      loop
+      muted
+      playsInline
+    >
+      <source src={`${BASE}${currentLevel.background}`} type="video/mp4" />
+    </video>
 
      <audio ref={audioRef} loop />
 

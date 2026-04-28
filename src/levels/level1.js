@@ -1,6 +1,7 @@
 export const level1 = {
   name: "Level 1: Network Basics",
   music: "Concre.mp3",
+  background: "/video/spacehole.mp4",
   worldHeight: 5000,
   spawnPlatformId: 1,
 
