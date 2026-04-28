@@ -4,6 +4,7 @@ export const level1 = {
   background: "/video/spacehole.mp4",
   worldHeight: 5000,
   spawnPlatformId: 1,
+  codecLeft: "Models/oldcodec.png",
 
   platforms: [
     // Spawn / early climb

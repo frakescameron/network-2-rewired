@@ -4,6 +4,7 @@ export const level0 = {
   background: "/video/spacehole.mp4",
   worldHeight: 3200,
   spawnPlatformId: 1,
+  codecLeft: "Models/oldcodec.png",
 
   platforms: [
     { id: 1, x: 520, y: 3000, width: 400, height: 14 },

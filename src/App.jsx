@@ -1046,7 +1046,7 @@ if (chargingRef.current) {
 {showDialogue && currentLine && (
   <div className="codec">
     <div className="codec-left">
-      <img src={`${BASE}Models/oldcodec.png`} />
+      <img src={`${BASE}${currentLevel.codecLeft}`} />
     </div>
 
     <div className="codec-center">
