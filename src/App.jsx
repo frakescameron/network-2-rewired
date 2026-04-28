@@ -7,10 +7,10 @@ import { dialogue } from "./dialogue";
 const SETTINGS = {
   green: { label: "OPTIMAL", maxChargeMs: 2000 },
   yellow: { label: "DEGRADED", maxChargeMs: 5000 },
-  red: { label: "UNSTABLE", maxChargeMs: 500 },
+  red: { label: "UNSTABLE", maxChargeMs: 300 },
 };
 
-const PLAYER_SIZE = 35;
+const PLAYER_SIZE = 55;
 
 const BASE = import.meta.env.BASE_URL;
 const CAMERA_DEAD_ZONE_Y = 280;
@@ -73,6 +73,7 @@ function App() {
 
   const [deaths, setDeaths] = useState(0);
   const deathAudioRef = useRef(null);
+  const [unstableStreak, setUnstableStreak] = useState(0);
 
   const showDialogueRef = useRef(showDialogue);
     useEffect(() => {
@@ -336,26 +337,42 @@ function respawnPlayer() {
     setScreen("start");
   }
 
-  function chooseAnswer(result) {
-    setAnswerState(result);
-    setShowQuestion(false);
+function chooseAnswer(result) {
+  setAnswerState(result);
+  setShowQuestion(false);
 
-    if (result === "green") {
-      setMaxChargeMs(950);
-    }
-
-    if (result === "yellow") {
-      setMaxChargeMs(5000);
-    }
-    
-
-    if (result === "red") {
-      setMaxChargeMs(100);
-    }
-
-    setChargeMs(0);
-    chargeRef.current = 0;
+  if (result === "green") {
+    setMaxChargeMs(950);
+    setUnstableStreak(0);
   }
+
+  if (result === "yellow") {
+    setMaxChargeMs(5000);
+    setUnstableStreak(0);
+  }
+
+  if (result === "red") {
+    setMaxChargeMs(300);
+
+    setUnstableStreak((streak) => {
+      const nextStreak = streak + 1;
+
+      if (nextStreak >= 3) {
+        setTimeout(() => {
+          respawnPlayer();
+          setUnstableStreak(0);
+        }, 0);
+
+        return 0;
+      }
+
+      return nextStreak;
+    });
+  }
+
+  setChargeMs(0);
+  chargeRef.current = 0;
+}
 
 
   function releaseJump() {
@@ -396,7 +413,7 @@ setLevelJumpCount((count) => count + 1);
 setQuestionJumpCount((count) => {
   const nextCount = count + 1;
 
-  if (nextCount >= 10) {
+  if (nextCount >= 10000) {
     setShowQuestion(true);
     setQuestionIndex((index) => {
       const nextIndex = index + 1;
@@ -584,6 +601,30 @@ function handleSlopeCollision(oldP, newP) {
  useEffect(() => {
   function keyDown(e) {
     keys.current[e.code] = true;
+
+  if (showQuestionRef.current) {
+    const numberMap = {
+      Digit1: 0,
+      Numpad1: 0,
+      Digit2: 1,
+      Numpad2: 1,
+      Digit3: 2,
+      Numpad3: 2,
+    };
+
+    const answerIndex = numberMap[e.code];
+
+    if (answerIndex !== undefined) {
+      e.preventDefault();
+      const answer = currentQuestion.answers[answerIndex];
+
+    if (answer) {
+      chooseAnswer(answer.result);
+    }
+
+    return;
+  }
+}
 
     if (e.code === "Escape" && showDialogueRef.current) {
       e.preventDefault();
@@ -870,12 +911,19 @@ if (checkGoalCollision(p)) {
     );
   }
 
+let playerImage = `${BASE}Models/rjcuteyes.PNG`;
+
+if (chargingRef.current) {
+  playerImage = `${BASE}Models/player-squat-2.png`;
+}
+
   return (
     <main className="game">
       
 <div className="hud">
   <div>ERRORS: {deaths.toString(2).padStart(8, "0")}</div>
   <div>JUMPS: {levelJumpCount.toString(2).padStart(8, "0")}</div>
+  <div>UNSTABLE: {unstableStreak}/3</div>
 </div>
 
       <video
@@ -960,7 +1008,7 @@ if (checkGoalCollision(p)) {
           className={`player-indicator ${answerState}`}
           style={{
             left: player.x,
-            top: player.y - cameraY - 58,
+            top: player.y - cameraY - 85,
           }}
         >
           {SETTINGS[answerState].label}
@@ -972,7 +1020,7 @@ if (checkGoalCollision(p)) {
           className={`charge-bar ${answerState}`}
           style={{
             left: player.x - 35,
-            top: player.y - cameraY - 38,
+            top: player.y - cameraY - 58,
           }}
         >
           <div style={{ width: `${chargePercent}%` }}></div>
@@ -980,14 +1028,14 @@ if (checkGoalCollision(p)) {
       )}
 
  <img
-  src={`${BASE}Models/rjcuteyes.PNG`}
+  src={playerImage}
   className="player"
   style={{
     position: "absolute",
     left: player.x,
     top: player.y - cameraY - 6,
-    width: 60,
-    height: 60,
+    width: 90,
+    height: 90,
     transform: "translate(-50%, -50%)",
     pointerEvents: "none",
   }}
@@ -1021,9 +1069,9 @@ if (checkGoalCollision(p)) {
             <h2>{currentQuestion.text}</h2>
 
             <div className="answers">
-              {currentQuestion.answers.map((answer) => (
+              {currentQuestion.answers.map((answer, index) => (
                 <button key={answer.text} onClick={() => chooseAnswer(answer.result)}>
-                  {answer.text}
+                  {index + 1}. {answer.text}
                 </button>
               ))}
             </div>

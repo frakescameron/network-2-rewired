@@ -23,4 +23,3 @@ export const level0 = {
     height: 80,
     }
 };
-
