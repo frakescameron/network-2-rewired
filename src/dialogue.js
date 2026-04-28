@@ -68,4 +68,11 @@ export const dialogue = {
       voice: "op4.mp3",
     }, 
   ],
+  level3: [
+    {
+      speaker: "OPERATOR",
+      text: "LIGMA.",
+      voice: "op4.mp3",
+    },
+  ]
 };
