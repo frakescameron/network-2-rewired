@@ -218,7 +218,7 @@ useEffect(() => {
 
     const nextPlayer = {
       x: spawnPlatform.x + spawnPlatform.width / 2,
-      y: spawnPlatform.y - PLAYER_SIZE / 2,
+      y: spawnPlatform.y - PLAYER_SIZE,
       vx: 0,
       vy: 0,
       grounded: true,
@@ -290,7 +290,7 @@ useEffect(() => {
 
     const startingPlayer = {
       x: spawnPlatform.x + spawnPlatform.width / 2,
-      y: spawnPlatform.y - PLAYER_SIZE / 2,
+      y: spawnPlatform.y - PLAYER_SIZE,
       vx: 0,
       vy: 0,
       grounded: true,
@@ -315,7 +315,7 @@ function respawnPlayer() {
 
   const respawnedPlayer = {
     x: spawnPlatform.x + spawnPlatform.width / 2,
-    y: spawnPlatform.y - PLAYER_SIZE / 2,
+    y: spawnPlatform.y - PLAYER_SIZE,
     vx: 0,
     vy: 0,
     grounded: true,
@@ -768,7 +768,9 @@ if (
   setChargeMs(0);
 }
 
-if (p.y > WORLD_HEIGHT + 100) {
+const currentWorldHeight = levelRef.current.worldHeight;
+
+if (p.y > currentWorldHeight + 100) {
   respawnPlayer();
   animationId = requestAnimationFrame(gameLoop);
   return;
@@ -795,7 +797,7 @@ if (checkGoalCollision(p)) {
 
             nextCameraY = Math.max(
               0,
-              Math.min(nextCameraY, WORLD_HEIGHT - window.innerHeight)
+              Math.min(nextCameraY, levelRef.current.worldHeight - window.innerHeight)
             );
 
             cameraYRef.current = nextCameraY;

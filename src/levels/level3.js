@@ -3,8 +3,8 @@ export const level3 = {
   music: "Concrete.mp3",
   name: "Level 3: Packet Abyss",
   worldHeight: 15000,
-  spawnPlatformId: 1,
-  codecLeft: "Models/oldcodec.png",
+  spawnPlatformId: 73,
+  codecLeft: "Models/evilvga.png",
 
 platforms: [
     // ZONE 1: Entry Ruins
@@ -172,7 +172,7 @@ platforms: [
 
     // Firewall slides
     { id: 3, x: 520, y: 12480, width: 260, height: 90, direction: "downRight" },
-    { id: 4, x: 1000, y: 12080, width: 280, height: 90, direction: "downLeft" },
+    { id: 4, x: 970, y: 12080, width: 280, height: 90, direction: "downLeft" },
 
     // Mid slide gauntlet
     { id: 5, x: 480, y: 9420, width: 310, height: 100, direction: "downRight" },

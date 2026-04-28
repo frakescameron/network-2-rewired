@@ -70,9 +70,56 @@ export const dialogue = {
   ],
   level3: [
     {
-      speaker: "OPERATOR",
-      text: "LIGMA.",
+      speaker: "DE-15",
+      text: "Looks like someone doesnt understand how to stay away.",
       voice: "op4.mp3",
+    },
+    {
+      speaker: "RJay",
+      text: "Your are terminated as soom as i get my connectors on you.",
+      voice: "rjay1.mp3",
+    },
+    {
+      speaker: "DE-15",
+      text: "Now that i know you are here i can start to mess with you more. Lets see how you like it when i start changing the UDP too.",
+      voice: "op4.mp3",
+    },
+    {
+      speaker: "RJay",
+      text: "Throw anything you got at me DE-15. I can handle it. You are just a pathetic outdated connector. I have been through worse than you in this network. I will get through you and get to C6. Time to put an end to this.",
+      voice: "rjay1.mp3",
+    },
+    {
+      speaker: "DE-15",
+      text: "Please. Attempt to stop me. I want to see you try. I want to see you fail. I want to see you suffer. Then when your pathetic body is broken and useless, I will end C6 right in front of you.",
+      voice: "op4.mp3",
+    },
+    {
+      speaker: "RJay",
+      text: "We will see about that DE-15. I am not going to let you win. I am going to get through you and get to C6. You are just a minor obstacle in my way.",
+      voice: "rjay1.mp3",
+    },
+  ],
+    level4: [
+    {
+      speaker: "DE-15",
+      text: "This is your last chance before I come terminate you myself.",
+      voice: "op4.mp3",
+    },
+    {
+      speaker: "RJay",
+      text: "I would love to see you try.",
+      voice: "rjay1.mp3",
+    },
+    {
+      speaker: "DE-15",
+      text: "Pesky little peice of filth. Your going to regret your very existence.",
+      voice: "op4.mp3",
+    },
+    {
+      speaker: "RJay",
+      text: "Only thing I regret is not terminating you when I had the chance.",
+      voice: "rjay1.mp3",
     },
   ]
 };
