@@ -4,7 +4,7 @@ export const level4 = {
   background: "/video/level34.mp4",
    worldHeight: 18000,
   spawnPlatformId: 78,
-  codecLeft: "Models/oldcodec.png",
+  codecLeft: "Models/evilvga.png",
 
 platforms: [
     // 1. Boot chamber

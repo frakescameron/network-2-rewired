@@ -121,5 +121,17 @@ export const dialogue = {
       text: "Only thing I regret is not terminating you when I had the chance.",
       voice: "rjay1.mp3",
     },
+  ],
+  level5: [
+    {
+      speaker: "DE-15",
+      text: "THIS IS WHERE YOU DIE.",
+      voice: "op4.mp3",
+    },
+    {
+      speaker: "RJay",
+      text: "Its time to terminate your video signal for good.",
+      voice: "rjay1.mp3",
+    },
   ]
 };
