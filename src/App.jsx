@@ -3,6 +3,7 @@ import "./App.css";
 import { levels } from "./levels";
 import { questions } from "./questions";
 import { dialogue } from "./dialogue";
+import { level5 } from "./levels/level5";
 
 const SETTINGS = {
   green: { label: "OPTIMAL", maxChargeMs: 2000 },
@@ -108,6 +109,7 @@ function App() {
   const [hazardY, setHazardY] = useState(null);
   const [bossDeathPrompt, setBossDeathPrompt] = useState(false);
   const hazardYRef = useRef(hazardY);
+  const maxJumps = currentLevel.questionEveryJumps || 10;
 
 useEffect(() => {
   hazardYRef.current = hazardY;
@@ -527,7 +529,7 @@ setLevelJumpCount((count) => count + 1);
 setQuestionJumpCount((count) => {
   const nextCount = count + 1;
 
-  const jumpsNeeded = levelRef.current.questionEveryJumps || 100000;
+  const jumpsNeeded = levelRef.current.questionEveryJumps || 10;
 
 if (nextCount >= jumpsNeeded) {
     setShowQuestion(true);
@@ -1076,7 +1078,7 @@ if (cutscene === "ending") {
 
 
         <div className="start-card">
-          <h1>Network 2: Rewired</h1>
+          <h1>PORT JUMPERS</h1>
           <p>The network was fixed once. It did not stay that way.</p>
 
           <button onClick={() => setCutscene("intro")}>Play</button>
@@ -1183,6 +1185,12 @@ if (chargingRef.current) {
   <div>ERRORS: {deaths.toString(2).padStart(8, "0")}</div>
   <div>JUMPS: {levelJumpCount.toString(2).padStart(8, "0")}</div>
   <div>UNSTABLE: {unstableStreak}/3</div>
+
+
+<div>
+  JUMPS REMAINING: {maxJumps - (levelJumpCount % maxJumps)}
+</div>
+  
 </div>
 
     <video
