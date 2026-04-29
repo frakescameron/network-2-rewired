@@ -105,6 +105,14 @@ function App() {
   const [cutscene, setCutscene] = useState(null);
   const [levelCodeInput, setLevelCodeInput] = useState("");
 
+  const [hazardY, setHazardY] = useState(null);
+  const [bossDeathPrompt, setBossDeathPrompt] = useState(false);
+  const hazardYRef = useRef(hazardY);
+
+useEffect(() => {
+  hazardYRef.current = hazardY;
+}, [hazardY]);
+
 useEffect(() => {
   if (screen !== "game") return;
   if (!audioRef.current) return;
@@ -236,10 +244,16 @@ useEffect(() => {
   setQuestionJumpCount(0);
   setAnswerState(null);
 
+  
+
   const targetLevel = levels[targetIndex];
   const spawnPlatform = targetLevel.platforms.find(
     (p) => p.id === targetLevel.spawnPlatformId
   );
+
+  const hazard = targetLevel.risingHazard;
+setHazardY(hazard?.enabled ? hazard.startY : null);
+setBossDeathPrompt(false);
 
   const nextPlayer = {
     x: spawnPlatform.x + spawnPlatform.width / 2,
@@ -247,6 +261,8 @@ useEffect(() => {
     vx: 0,
     vy: 0,
     grounded: true,
+
+  
   };
 
   setPlayer(nextPlayer);
@@ -293,6 +309,10 @@ if (nextIndex >= levels.length) {
     setChargeMs(0);
     chargeRef.current = 0;
     chargingRef.current = false;
+
+    const hazard = nextLevel.risingHazard;
+setHazardY(hazard?.enabled ? hazard.startY : null);
+setBossDeathPrompt(false);
 }
 
 
@@ -326,6 +346,42 @@ if (nextIndex >= levels.length) {
     audioRef.current.currentTime = 0;
   }
 
+  function restartLevel() {
+  const current = levelRef.current;
+  const spawnPlatform = current.platforms.find(
+    (p) => p.id === current.spawnPlatformId
+  );
+
+  const restartedPlayer = {
+    x: spawnPlatform.x + spawnPlatform.width / 2,
+    y: spawnPlatform.y - PLAYER_SIZE,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+  };
+
+  setPlayer(restartedPlayer);
+  playerRef.current = restartedPlayer;
+
+  setCameraY(current.worldHeight - window.innerHeight);
+  cameraYRef.current = current.worldHeight - window.innerHeight;
+
+  setLevelJumpCount(0);
+  setQuestionJumpCount(0);
+  setBossDeathPrompt(false);
+
+  const hazard = current.risingHazard;
+  setHazardY(hazard?.enabled ? hazard.startY : null);
+
+  setShowDialogue(true);
+  setDialogueIndex(0);
+  setShowQuestion(false);
+  setAnswerState(null);
+  setChargeMs(0);
+  chargeRef.current = 0;
+  chargingRef.current = false;
+}
+
  function startGame() {
   setCameraY(WORLD_HEIGHT - window.innerHeight);
   cameraYRef.current = WORLD_HEIGHT - window.innerHeight;
@@ -339,6 +395,10 @@ if (nextIndex >= levels.length) {
   setAnswerState(null);
   setChargeMs(0);
   chargeRef.current = 0;
+
+  const hazard = currentLevel.risingHazard;
+setHazardY(hazard?.enabled ? hazard.startY : null);
+setBossDeathPrompt(false);
 
     const spawnPlatform = platforms[0];
 
@@ -467,7 +527,9 @@ setLevelJumpCount((count) => count + 1);
 setQuestionJumpCount((count) => {
   const nextCount = count + 1;
 
-  if (nextCount >= 10000) {
+  const jumpsNeeded = levelRef.current.questionEveryJumps || 100000;
+
+if (nextCount >= jumpsNeeded) {
     setShowQuestion(true);
     setQuestionIndex((index) => {
       const nextIndex = index + 1;
@@ -786,12 +848,13 @@ function handleSlopeCollision(oldP, newP) {
       const delta = time - lastTime;
       lastTime = time;
 
-      if (
-          screenRef.current !== "game" ||
-          wonRef.current ||
-          showDialogueRef.current ||
-          levelCleared
-        ) {
+ if (
+  screenRef.current !== "game" ||
+  wonRef.current ||
+  showDialogueRef.current ||
+  levelCleared ||
+  bossDeathPrompt
+) {
         animationId = requestAnimationFrame(gameLoop);
         return;
       }
@@ -825,6 +888,22 @@ if (p.grounded) {
       p = handlePlatformCollision(oldP, p);
       p = handleSlopeCollision(oldP, p);
       p = handleWallCollision(oldP, p);
+
+      const hazard = levelRef.current.risingHazard;
+
+if (hazard?.enabled && hazardYRef.current !== null) {
+  const nextHazardY = hazardYRef.current - hazard.speed;
+
+  hazardYRef.current = nextHazardY;
+  setHazardY(nextHazardY);
+
+  if (p.y + PLAYER_SIZE / 2 >= nextHazardY) {
+    setBossDeathPrompt(true);
+    setDeaths((count) => count + 1);
+    animationId = requestAnimationFrame(gameLoop);
+    return;
+  }
+}
 
       // allow holding SPACE before landing to start charging once grounded
 if (
@@ -1077,6 +1156,28 @@ if (chargingRef.current) {
 
   return (
     <main className="game">
+
+
+      {hazardY !== null && (
+  <div
+    className="rising-hazard"
+    style={{
+      top: hazardY - cameraY,
+    }}
+  />
+)}
+
+{bossDeathPrompt && (
+  <div className="question-overlay">
+    <div className="question-modal">
+      <h2>CONNECTION TERMINATED</h2>
+      <p>The core trace caught you.</p>
+
+      <button onClick={restartLevel}>Restart Level</button>
+      <button onClick={backToStart}>Main Menu</button>
+    </div>
+  </div>
+)}
       
 <div className="hud">
   <div>ERRORS: {deaths.toString(2).padStart(8, "0")}</div>

@@ -3,8 +3,14 @@ export const level5 = {
   music: "bossfight.mp3",
   name: "Final Boss: Core Trace",
   worldHeight: 10000,
-  spawnPlatformId: 32,
+  spawnPlatformId: 1,
   codecLeft: "Models/evilvga.png",
+  questionEveryJumps: 3,
+  risingHazard: {
+    enabled: true,
+    startY: 9999,
+    speed: 0.15,
+  },
 
   platforms: [
     // Start
