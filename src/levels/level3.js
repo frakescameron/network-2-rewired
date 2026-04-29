@@ -3,7 +3,7 @@ export const level3 = {
   music: "Concrete.mp3",
   name: "Level 3: Packet Abyss",
   worldHeight: 15000,
-  spawnPlatformId: 73,
+  spawnPlatformId: 1,
   codecLeft: "Models/evilvga.png",
 
 platforms: [

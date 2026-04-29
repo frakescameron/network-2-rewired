@@ -5,7 +5,7 @@ export const level5 = {
   worldHeight: 10000,
   spawnPlatformId: 1,
   codecLeft: "Models/evilvga.png",
-  questionEveryJumps: 3,
+  questionEveryJumps: 5,
   risingHazard: {
     enabled: true,
     startY: 9999,

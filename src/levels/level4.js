@@ -3,7 +3,7 @@ export const level4 = {
   music: "fnfahh.mp3",
   background: "/video/level34.mp4",
    worldHeight: 18000,
-  spawnPlatformId: 78,
+  spawnPlatformId: 1,
   codecLeft: "Models/evilvga.png",
 
 platforms: [
