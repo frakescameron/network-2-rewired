@@ -1050,7 +1050,7 @@ if (cutscene === "ending") {
         />
 
       <div className="start-card">
-        <h1>Network 2: Rewired</h1>
+        <h1>Port Jumpers</h1>
         <p>Click anywhere to start</p>
       </div>
     </main>
