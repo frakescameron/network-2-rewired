@@ -15,6 +15,15 @@ const PLAYER_SIZE = 55;
 const BASE = import.meta.env.BASE_URL;
 const CAMERA_DEAD_ZONE_Y = 280;
 
+const LEVEL_CODES = {
+  DNS: 0,
+  TCP: 1,
+  UDP: 2,
+  PORT: 3,
+  CAT6: 4,
+  RJ45: 5,
+};
+
 
 function App() {
   const [levelIndex, setLevelIndex] = useState(0);
@@ -92,6 +101,9 @@ function App() {
   const displayedTextRef = useRef(displayedText);
   const currentLineRef = useRef(currentLine);
   const currentDialogueSetRef = useRef(currentDialogueSet);
+
+  const [cutscene, setCutscene] = useState(null);
+  const [levelCodeInput, setLevelCodeInput] = useState("");
 
 useEffect(() => {
   if (screen !== "game") return;
@@ -201,15 +213,57 @@ useEffect(() => {
     stopGameMusic();
     setScreen("start");
   }
+
+  function skipToLevelByCode() {
+  const code = levelCodeInput.trim().toUpperCase();
+  const targetIndex = LEVEL_CODES[code];
+
+  if (targetIndex === undefined) {
+    alert("Invalid level code");
+    return;
+  }
+
+  setLevelIndex(targetIndex);
+  setLevelCodeInput("");
+  setCutscene(null);
+  setScreen("game");
+  setShowDialogue(true);
+  setDialogueIndex(0);
+  setShowQuestion(false);
+  setWon(false);
+  setLevelCleared(false);
+  setLevelJumpCount(0);
+  setQuestionJumpCount(0);
+  setAnswerState(null);
+
+  const targetLevel = levels[targetIndex];
+  const spawnPlatform = targetLevel.platforms.find(
+    (p) => p.id === targetLevel.spawnPlatformId
+  );
+
+  const nextPlayer = {
+    x: spawnPlatform.x + spawnPlatform.width / 2,
+    y: spawnPlatform.y - PLAYER_SIZE / 2,
+    vx: 0,
+    vy: 0,
+    grounded: true,
+  };
+
+  setPlayer(nextPlayer);
+  playerRef.current = nextPlayer;
+
+  setCameraY(targetLevel.worldHeight - window.innerHeight);
+  cameraYRef.current = targetLevel.worldHeight - window.innerHeight;
+}
     
   function goToNextLevel() {
     const nextIndex = levelIndex + 1;
 
-    if (nextIndex >= levels.length) {
-      setWon(true);
-      wonRef.current = true;
-      return;
-    }
+if (nextIndex >= levels.length) {
+  setLevelCleared(false);
+  setCutscene("ending");
+  return;
+}
 
     const nextLevel = levels[nextIndex];
     const spawnPlatform = nextLevel.platforms.find(
@@ -602,6 +656,24 @@ function handleSlopeCollision(oldP, newP) {
   function keyDown(e) {
     keys.current[e.code] = true;
 
+    
+
+  if (e.code === "Escape" && cutscene) {
+    e.preventDefault();
+
+    if (cutscene === "intro") {
+      setCutscene(null);
+      startGame();
+    }
+
+    if (cutscene === "ending") {
+      setCutscene(null);
+      setScreen("start");
+    }
+
+    return;
+  }
+
   if (showQuestionRef.current) {
     const numberMap = {
       Digit1: 0,
@@ -820,6 +892,58 @@ if (checkGoalCollision(p)) {
 
   const chargePercent = Math.min((chargeMs / maxChargeMs) * 100, 100);
 
+  if (cutscene === "intro") {
+  return (
+    <main className="cutscene-screen">
+      <video
+        className="cutscene-video"
+        src={`${BASE}video/intro.mp4`}
+        autoPlay
+        onEnded={() => {
+          setCutscene(null);
+          startGame();
+        }}
+      />
+
+      <button
+        className="cutscene-skip"
+        onClick={() => {
+          setCutscene(null);
+          startGame();
+        }}
+      >
+        SKIP / ESC
+      </button>
+    </main>
+  );
+}
+
+if (cutscene === "ending") {
+  return (
+    <main className="cutscene-screen">
+      <video
+        className="cutscene-video"
+        src={`${BASE}video/ending.mp4`}
+        autoPlay
+        onEnded={() => {
+          setCutscene(null);
+          setScreen("start");
+        }}
+      />
+
+      <button
+        className="cutscene-skip"
+        onClick={() => {
+          setCutscene(null);
+          setScreen("start");
+        }}
+      >
+        SKIP / ESC
+      </button>
+    </main>
+  );
+}
+
   if (screen === "pre") {
   return (
     <main
@@ -876,9 +1000,25 @@ if (checkGoalCollision(p)) {
           <h1>Network 2: Rewired</h1>
           <p>The network was fixed once. It did not stay that way.</p>
 
-          <button onClick={startGame}>Play</button>
+          <button onClick={() => setCutscene("intro")}>Play</button>
           <button onClick={() => setScreen("how")}>How to Play</button>
         </div>
+
+        <div className="level-code-box">
+  <p>Input code to skip to level</p>
+
+  <input
+  onKeyDown={(e) => {
+  if (e.key === "Enter") {
+    skipToLevelByCode();
+  }
+}}
+    value={levelCodeInput}
+    onChange={(e) => setLevelCodeInput(e.target.value)}
+  />
+
+  <button onClick={skipToLevelByCode}>Load Level</button>
+</div>
       </main>
     );
   }
@@ -909,7 +1049,23 @@ if (checkGoalCollision(p)) {
           <button onClick={startGame}>Play</button>
           <button onClick={() => setScreen("start")}>Back</button>
         </div>
+              <div className="level-code-box">
+        <p>Input code to skip to level</p>
+
+        <input
+          value={levelCodeInput}
+          onChange={(e) => setLevelCodeInput(e.target.value)}
+          onKeyDown={(e) => {
+  if (e.key === "Enter") {
+    skipToLevelByCode();
+  }
+}}
+        />
+
+        <button onClick={skipToLevelByCode}>Load Level</button>
+      </div>
       </main>
+    
     );
   }
 

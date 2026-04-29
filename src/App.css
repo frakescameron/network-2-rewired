@@ -377,3 +377,52 @@ body {
 .codec-skip:hover {
   background: rgba(0, 255, 204, 0.15);
 }
+
+.cutscene-screen {
+  position: fixed;
+  inset: 0;
+  background: black;
+  z-index: 999;
+}
+
+.cutscene-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cutscene-skip {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  background: black;
+  color: #00ffcc;
+  border: 1px solid #00ffcc;
+  padding: 10px 14px;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+}
+
+.level-code-box {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 260px;
+  text-align: left;
+  color: #00ffcc;
+  font-family: "Courier New", monospace;
+}
+
+.level-code-box input {
+  width: 100%;
+  padding: 10px;
+  background: #050505;
+  color: #00ffcc;
+  border: 1px solid #00ffcc;
+  margin-bottom: 8px;
+}
+
+.level-code-box button {
+  width: 100%;
+}
